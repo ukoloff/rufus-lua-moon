@@ -8,9 +8,9 @@ Gem::Specification.new do |spec|
   spec.version       = Rufus::Lua::Moon::VERSION
   spec.authors       = ["Stas Ukolov"]
   spec.email         = ["ukoloff@gmail.com"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
-  spec.homepage      = ""
+  spec.description   = 'Provides MoonScript for Rufus::Lua interpreter'
+  spec.summary       = ''
+  spec.homepage      = "https://github.com/ukoloff/rufus-lua-moon"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files`.split($/)
