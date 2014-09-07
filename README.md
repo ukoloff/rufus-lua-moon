@@ -29,10 +29,9 @@ s.eval <<EOL
   print(x)
 EOL
 ```
-You can set `package.moonpath` and require file with moonscript code:
+You can set `package.moonpath` and require file(s) with moonscript code:
 ```ruby
-s=Rufus::Lua::State.new
-s.moon!
+s=Rufus::Lua::State.new.moon!
 s.eval <<EOL
   package.moonpath='./?.moon'
   require 'myfile'  -- load 'myfile.moon'
