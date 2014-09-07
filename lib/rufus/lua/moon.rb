@@ -12,6 +12,7 @@ module Rufus
           (['', '/init'].map{|x|File.expand_path "?#{x}.lua", lib}<<
            self['package']['path'])*';'
         eval 'require "moonscript"'
+        self
       end
     end
   end
