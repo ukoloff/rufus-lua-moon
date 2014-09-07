@@ -30,7 +30,7 @@ s.eval <<EOL
 EOL
 ```
 You can set `package.moonpath` and require file with moonscript code:
-```
+```ruby
 s=Rufus::Lua::State.new
 s.moon!
 s.eval <<EOL
