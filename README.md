@@ -17,3 +17,10 @@ Or install it yourself as:
     $ gem install rufus-lua-moon
 
 ## Usage
+
+
+## Credits
+
+  * [Lua](http://www.lua.org/)
+  * [MoonScript](http://moonscript.org/)
+  * [Rufus::Lua](https://github.com/jmettraux/rufus-lua)
