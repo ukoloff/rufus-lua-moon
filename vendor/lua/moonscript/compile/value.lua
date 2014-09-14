@@ -22,7 +22,7 @@ local string_chars = {
   ["\r"] = "\\r",
   ["\n"] = "\\n"
 }
-return {
+local value_compilers = {
   exp = function(self, node)
     local _comp
     _comp = function(i, value)
@@ -76,20 +76,15 @@ return {
   end,
   chain = function(self, node)
     local callee = node[2]
-    local callee_type = ntype(callee)
     if callee == -1 then
       callee = self:get("scope_var")
       if not callee then
         user_error("Short-dot syntax must be called within a with block")
       end
     end
-    if callee_type == "ref" and callee[2] == "super" or callee == "super" then
-      do
-        local sup = self:get("super")
-        if sup then
-          return self:value(sup(self, node))
-        end
-      end
+    local sup = self:get("super")
+    if callee == "super" and sup then
+      return self:value(sup(self, node))
     end
     local chain_item
     chain_item = function(node)
@@ -105,11 +100,12 @@ return {
       elseif t == "colon_stub" then
         return user_error("Uncalled colon stub")
       else
-        return error("Unknown chain action: " .. tostring(t))
+        return error("Unknown chain action: " .. t)
       end
     end
-    if (callee_type == "self" or callee_type == "self_class") and node[3] and ntype(node[3]) == "call" then
-      callee[1] = callee_type .. "_colon"
+    local t = ntype(callee)
+    if (t == "self" or t == "self_class") and node[3] and ntype(node[3]) == "call" then
+      callee[1] = t .. "_colon"
     end
     local callee_value = self:value(callee)
     if ntype(callee) == "exp" then
@@ -176,10 +172,7 @@ return {
           'if',
           {
             'exp',
-            {
-              "ref",
-              name
-            },
+            name,
             '==',
             'nil'
           },
@@ -289,30 +282,28 @@ return {
     return self:line("not ", self:value(node[2]))
   end,
   self = function(self, node)
-    return "self." .. self:name(node[2])
+    return "self." .. self:value(node[2])
   end,
   self_class = function(self, node)
-    return "self.__class." .. self:name(node[2])
+    return "self.__class." .. self:value(node[2])
   end,
   self_colon = function(self, node)
-    return "self:" .. self:name(node[2])
+    return "self:" .. self:value(node[2])
   end,
   self_class_colon = function(self, node)
-    return "self.__class:" .. self:name(node[2])
-  end,
-  ref = function(self, value)
-    do
-      local sup = value[2] == "super" and self:get("super")
-      if sup then
-        return self:value(sup(self))
-      end
-    end
-    return tostring(value[2])
+    return "self.__class:" .. self:value(node[2])
   end,
   raw_value = function(self, value)
+    local sup = self:get("super")
+    if value == "super" and sup then
+      return self:value(sup(self))
+    end
     if value == "..." then
       self:send("varargs")
     end
     return tostring(value)
   end
+}
+return {
+  value_compilers = value_compilers
 }

@@ -5,12 +5,12 @@ do
 end
 local Set
 Set = function(items)
-  local _tbl_0 = { }
+  local self = { }
   for _index_0 = 1, #items do
-    local k = items[_index_0]
-    _tbl_0[k] = true
+    local key = items[_index_0]
+    self[key] = true
   end
-  return _tbl_0
+  return self
 end
 local Stack
 do
@@ -21,13 +21,9 @@ do
     pop = function(self)
       return remove(self)
     end,
-    push = function(self, value, ...)
+    push = function(self, value)
       insert(self, value)
-      if ... then
-        return self:push(...)
-      else
-        return value
-      end
+      return value
     end,
     top = function(self)
       return self[#self]
@@ -36,7 +32,13 @@ do
   _base_0.__index = _base_0
   local _class_0 = setmetatable({
     __init = function(self, ...)
-      self:push(...)
+      local _list_0 = {
+        ...
+      }
+      for _index_0 = 1, #_list_0 do
+        local v = _list_0[_index_0]
+        self:push(v)
+      end
       return nil
     end,
     __base = _base_0,

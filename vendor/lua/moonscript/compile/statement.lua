@@ -12,7 +12,7 @@ do
   local _obj_0 = table
   concat, insert = _obj_0.concat, _obj_0.insert
 end
-return {
+local statement_compilers = {
   raw = function(self, node)
     return self:add(node[2])
   end,
@@ -242,4 +242,7 @@ return {
     end
   end,
   noop = function(self) end
+}
+return {
+  statement_compilers = statement_compilers
 }
