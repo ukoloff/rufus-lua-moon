@@ -1,5 +1,7 @@
 # Rufus::Lua::Moon
 
+[![Gem Version](https://badge.fury.io/rb/rufus-lua-moon.svg)](http://badge.fury.io/rb/rufus-lua-moon)
+
 Provides MoonScript for Rufus::Lua interpreter
 
 ## Installation
