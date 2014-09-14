@@ -61,7 +61,6 @@ do
         local _exp_0 = mtype(l)
         if "string" == _exp_0 or DelayedLine == _exp_0 then
           line_no = line_no + 1
-          out[line_no] = posmap[i]
           for _ in l:gmatch("\n") do
             line_no = line_no + 1
           end
@@ -102,6 +101,7 @@ do
             end
           end
           insert(buffer, "\n")
+          local last = l
         elseif Lines == _exp_0 then
           l:flatten(indent and indent .. indent_char or indent_char, buffer)
         else
@@ -150,30 +150,38 @@ end
 do
   local _base_0 = {
     pos = nil,
+    _append_single = function(self, item)
+      if Line == mtype(item) then
+        if not (self.pos) then
+          self.pos = item.pos
+        end
+        for _index_0 = 1, #item do
+          local value = item[_index_0]
+          self:_append_single(value)
+        end
+      else
+        insert(self, item)
+      end
+      return nil
+    end,
     append_list = function(self, items, delim)
       for i = 1, #items do
-        self:append(items[i])
+        self:_append_single(items[i])
         if i < #items then
           insert(self, delim)
         end
       end
       return nil
     end,
-    append = function(self, first, ...)
-      if Line == mtype(first) then
-        if not (self.pos) then
-          self.pos = first.pos
-        end
-        for _index_0 = 1, #first do
-          local value = first[_index_0]
-          self:append(value)
-        end
-      else
-        insert(self, first)
+    append = function(self, ...)
+      local _list_0 = {
+        ...
+      }
+      for _index_0 = 1, #_list_0 do
+        local item = _list_0[_index_0]
+        self:_append_single(item)
       end
-      if ... then
-        return self:append(...)
-      end
+      return nil
     end,
     render = function(self, buffer)
       local current = { }
@@ -201,7 +209,7 @@ do
           insert(current, chunk)
         end
       end
-      if current[1] then
+      if #current > 0 then
         add_current()
       end
       return buffer
@@ -415,14 +423,8 @@ do
       })
       return name
     end,
-    add = function(self, item, pos)
-      do
-        local _with_0 = self._lines
-        _with_0:add(item)
-        if pos then
-          _with_0:mark_pos(pos)
-        end
-      end
+    add = function(self, item)
+      self._lines:add(item)
       return item
     end,
     render = function(self, buffer)
@@ -701,6 +703,7 @@ tree = function(tree, options)
   if not (success) then
     local error_msg, error_pos
     if type(err) == "table" then
+      local error_type = err[1]
       local _exp_0 = err[1]
       if "user-error" == _exp_0 or "compile-error" == _exp_0 then
         error_msg, error_pos = unpack(err, 2)

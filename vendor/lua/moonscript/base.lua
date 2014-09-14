@@ -33,7 +33,7 @@ to_lua = function(text, options)
   end
   if "string" ~= type(text) then
     local t = type(text)
-    return nil, "expecting string (got " .. t .. ")"
+    return nil, "expecting string (got " .. t .. ")", 2
   end
   local tree, err = parse.string(text)
   if not tree then
@@ -41,7 +41,7 @@ to_lua = function(text, options)
   end
   local code, ltable, pos = compile.tree(tree, options)
   if not code then
-    return nil, compile.format_error(ltable, pos, text)
+    return nil, compile.format_error(ltable, pos, text), 2
   end
   return code, ltable
 end
@@ -60,7 +60,7 @@ moon_loader = function(name)
   if file then
     local text = file:read("*a")
     file:close()
-    local res, err = loadstring(text, "@" .. tostring(file_path))
+    local res, err = loadstring(text, file_path)
     if not res then
       error(file_path .. ": " .. err)
     end
@@ -90,7 +90,7 @@ loadfile = function(fname, ...)
   end
   local text = assert(file:read("*a"))
   file:close()
-  return loadstring(text, "@" .. tostring(fname), ...)
+  return loadstring(text, fname, ...)
 end
 dofile = function(...)
   local f = assert(loadfile(...))
@@ -128,6 +128,7 @@ return {
   insert_loader = insert_loader,
   remove_loader = remove_loader,
   to_lua = to_lua,
+  moon_chunk = moon_chunk,
   moon_loader = moon_loader,
   dirsep = dirsep,
   dofile = dofile,
