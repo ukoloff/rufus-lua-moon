@@ -1,19 +1,41 @@
+module("moonscript.compile", package.seeall)
 local util = require("moonscript.util")
 local data = require("moonscript.data")
+require("moonscript.compile.format")
 local ntype
 do
   local _table_0 = require("moonscript.types")
   ntype = _table_0.ntype
 end
-local user_error
-do
-  local _table_0 = require("moonscript.errors")
-  user_error = _table_0.user_error
-end
 local concat, insert = table.concat, table.insert
-local unpack = util.unpack
-local table_delim = ","
-local value_compilers = {
+local table_append
+table_append = function(name, len, value)
+  return {
+    {
+      "update",
+      len,
+      "+=",
+      1
+    },
+    {
+      "assign",
+      {
+        {
+          "chain",
+          name,
+          {
+            "index",
+            len
+          }
+        }
+      },
+      {
+        value
+      }
+    }
+  }
+end
+value_compile = {
   exp = function(self, node)
     local _comp
     _comp = function(i, value)
@@ -26,11 +48,11 @@ local value_compilers = {
       local _with_0 = self:line()
       _with_0:append_list((function()
         local _accum_0 = { }
-        local _len_0 = 1
+        local _len_0 = 0
         for i, v in ipairs(node) do
           if i > 1 then
-            _accum_0[_len_0] = _comp(i, v)
             _len_0 = _len_0 + 1
+            _accum_0[_len_0] = _comp(i, v)
           end
         end
         return _accum_0
@@ -38,17 +60,22 @@ local value_compilers = {
       return _with_0
     end
   end,
+  update = function(self, node)
+    local _, name = unpack(node)
+    self:stm(node)
+    return self:name(name)
+  end,
   explist = function(self, node)
     do
       local _with_0 = self:line()
       _with_0:append_list((function()
         local _accum_0 = { }
-        local _len_0 = 1
+        local _len_0 = 0
         local _list_0 = node
         for _index_0 = 2, #_list_0 do
           local v = _list_0[_index_0]
-          _accum_0[_len_0] = self:value(v)
           _len_0 = _len_0 + 1
+          _accum_0[_len_0] = self:value(v)
         end
         return _accum_0
       end)(), ", ")
@@ -59,9 +86,8 @@ local value_compilers = {
     return self:line("(", self:value(node[2]), ")")
   end,
   string = function(self, node)
-    local _, delim, inner = unpack(node)
-    local end_delim = delim:gsub("%[", "]")
-    return delim .. inner .. end_delim
+    local _, delim, inner, delim_end = unpack(node)
+    return delim .. inner .. (delim_end or delim)
   end,
   chain = function(self, node)
     local callee = node[2]
@@ -92,9 +118,8 @@ local value_compilers = {
         return error("Unknown chain action: " .. t)
       end
     end
-    local t = ntype(callee)
-    if (t == "self" or t == "self_class") and node[3] and ntype(node[3]) == "call" then
-      callee[1] = t .. "_colon"
+    if ntype(callee) == "self" and node[3] and ntype(node[3]) == "call" then
+      callee[1] = "self_colon"
     end
     local callee_value = self:value(callee)
     if ntype(callee) == "exp" then
@@ -118,7 +143,7 @@ local value_compilers = {
     local self_args = { }
     local arg_names = (function()
       local _accum_0 = { }
-      local _len_0 = 1
+      local _len_0 = 0
       local _list_0 = args
       for _index_0 = 1, #_list_0 do
         local arg = _list_0[_index_0]
@@ -126,7 +151,7 @@ local value_compilers = {
         if type(name) == "string" then
           name = name
         else
-          if name[1] == "self" or name[1] == "self_class" then
+          if name[1] == "self" then
             insert(self_args, name)
           end
           name = name[2]
@@ -135,8 +160,10 @@ local value_compilers = {
           insert(default_args, arg)
         end
         local _value_0 = name
-        _accum_0[_len_0] = _value_0
-        _len_0 = _len_0 + 1
+        if _value_0 ~= nil then
+          _len_0 = _len_0 + 1
+          _accum_0[_len_0] = _value_0
+        end
       end
       return _accum_0
     end)()
@@ -183,12 +210,12 @@ local value_compilers = {
       end
       local self_arg_values = (function()
         local _accum_0 = { }
-        local _len_0 = 1
+        local _len_0 = 0
         local _list_2 = self_args
         for _index_0 = 1, #_list_2 do
           local arg = _list_2[_index_0]
-          _accum_0[_len_0] = arg[2]
           _len_0 = _len_0 + 1
+          _accum_0[_len_0] = arg[2]
         end
         return _accum_0
       end)()
@@ -203,12 +230,15 @@ local value_compilers = {
       if #args > #arg_names then
         arg_names = (function()
           local _accum_0 = { }
-          local _len_0 = 1
+          local _len_0 = 0
           local _list_2 = args
           for _index_0 = 1, #_list_2 do
             local arg = _list_2[_index_0]
-            _accum_0[_len_0] = arg[1]
-            _len_0 = _len_0 + 1
+            local _value_0 = arg[1]
+            if _value_0 ~= nil then
+              _len_0 = _len_0 + 1
+              _accum_0[_len_0] = _value_0
+            end
           end
           return _accum_0
         end)()
@@ -221,22 +251,23 @@ local value_compilers = {
     local _, items = unpack(node)
     do
       local _with_0 = self:block("{", "}")
+      _with_0.delim = ","
       local format_line
       format_line = function(tuple)
         if #tuple == 2 then
           local key, value = unpack(tuple)
-          if ntype(key) == "key_literal" and data.lua_keywords[key[2]] then
+          if type(key) == "string" and data.lua_keywords[key] then
             key = {
               "string",
               '"',
-              key[2]
+              key
             }
           end
           local assign
-          if ntype(key) == "key_literal" then
-            assign = key[2]
-          else
+          if type(key) ~= "string" then
             assign = self:line("[", _with_0:value(key), "]")
+          else
+            assign = key
           end
           _with_0:set("current_block", key)
           local out = self:line(assign, " = ", _with_0:value(value))
@@ -247,13 +278,10 @@ local value_compilers = {
         end
       end
       if items then
-        local count = #items
-        for i, tuple in ipairs(items) do
-          local line = format_line(tuple)
-          if not (count == i) then
-            line:append(table_delim)
-          end
-          _with_0:add(line)
+        local _list_0 = items
+        for _index_0 = 1, #_list_0 do
+          local line = _list_0[_index_0]
+          _with_0:add(format_line(line))
         end
       end
       return _with_0
@@ -262,8 +290,8 @@ local value_compilers = {
   minus = function(self, node)
     return self:line("-", self:value(node[2]))
   end,
-  temp_name = function(self, node, ...)
-    return node:get_name(self, ...)
+  temp_name = function(self, node)
+    return node:get_name(self)
   end,
   number = function(self, node)
     return node[2]
@@ -277,14 +305,8 @@ local value_compilers = {
   self = function(self, node)
     return "self." .. self:value(node[2])
   end,
-  self_class = function(self, node)
-    return "self.__class." .. self:value(node[2])
-  end,
   self_colon = function(self, node)
     return "self:" .. self:value(node[2])
-  end,
-  self_class_colon = function(self, node)
-    return "self.__class:" .. self:value(node[2])
   end,
   raw_value = function(self, value)
     local sup = self:get("super")
@@ -292,11 +314,8 @@ local value_compilers = {
       return self:value(sup(self))
     end
     if value == "..." then
-      self:send("varargs")
+      self.has_varargs = true
     end
     return tostring(value)
   end
-}
-return {
-  value_compilers = value_compilers
 }

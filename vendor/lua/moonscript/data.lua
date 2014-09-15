@@ -1,5 +1,5 @@
-local concat, remove, insert = table.concat, table.remove, table.insert
-local Set
+module("moonscript.data", package.seeall)
+local concat = table.concat
 Set = function(items)
   local self = { }
   local _list_0 = items
@@ -9,18 +9,17 @@ Set = function(items)
   end
   return self
 end
-local Stack
-do
+Stack = (function()
   local _parent_0 = nil
   local _base_0 = {
     __tostring = function(self)
       return "<Stack {" .. concat(self, ", ") .. "}>"
     end,
     pop = function(self)
-      return remove(self)
+      return table.remove(self)
     end,
     push = function(self, value)
-      insert(self, value)
+      table.insert(self, value)
       return value
     end,
     top = function(self)
@@ -61,12 +60,9 @@ do
     end
   })
   _base_0.__class = _class_0
-  if _parent_0 and _parent_0.__inherited then
-    _parent_0.__inherited(_parent_0, _class_0)
-  end
-  Stack = _class_0
-end
-local lua_keywords = Set({
+  return _class_0
+end)()
+lua_keywords = Set({
   'and',
   'break',
   'do',
@@ -89,8 +85,3 @@ local lua_keywords = Set({
   'until',
   'while'
 })
-return {
-  Set = Set,
-  Stack = Stack,
-  lua_keywords = lua_keywords
-}

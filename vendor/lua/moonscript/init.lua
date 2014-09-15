@@ -1,18 +1,15 @@
-local compile = require("moonscript.compile")
-local parse = require("moonscript.parse")
+module("moonscript", package.seeall)
+require("moonscript.compile")
+require("moonscript.parse")
+require("moonscript.util")
 local concat, insert = table.concat, table.insert
-local split, dump, get_options, unpack
-do
-  local _table_0 = require("moonscript.util")
-  split, dump, get_options, unpack = _table_0.split, _table_0.dump, _table_0.get_options, _table_0.unpack
-end
+local split, dump = util.split, util.dump
 local lua = {
-  loadstring = loadstring,
-  load = load
+  loadstring = loadstring
 }
-local dirsep, line_tables, create_moonpath, to_lua, moon_loader, init_loader, loadstring, loadfile, dofile
 dirsep = "/"
-line_tables = require("moonscript.line_tables")
+line_tables = { }
+local create_moonpath
 create_moonpath = function(package_path)
   local paths = split(package_path, ";")
   for i, path in ipairs(paths) do
@@ -23,10 +20,7 @@ create_moonpath = function(package_path)
   end
   return concat(paths, ";")
 end
-to_lua = function(text, options)
-  if options == nil then
-    options = { }
-  end
+to_lua = function(text)
   if "string" ~= type(text) then
     local t = type(text)
     error("expecting string (got " .. t .. ")", 2)
@@ -35,7 +29,7 @@ to_lua = function(text, options)
   if not tree then
     error(err, 2)
   end
-  local code, ltable, pos = compile.tree(tree, options)
+  local code, ltable, pos = compile.tree(tree)
   if not code then
     error(compile.format_error(ltable, pos, text), 2)
   end
@@ -43,7 +37,7 @@ to_lua = function(text, options)
 end
 moon_loader = function(name)
   local name_path = name:gsub("%.", dirsep)
-  local file, file_path
+  local file, file_path = nil, nil
   local _list_0 = split(package.moonpath, ";")
   for _index_0 = 1, #_list_0 do
     local path = _list_0[_index_0]
@@ -55,7 +49,6 @@ moon_loader = function(name)
   end
   if file then
     local text = file:read("*a")
-    file:close()
     return loadstring(text, file_path)
   else
     return nil, "Could not find moon file"
@@ -64,17 +57,16 @@ end
 if not package.moonpath then
   package.moonpath = create_moonpath(package.path)
 end
+local init_loader
 init_loader = function()
-  return insert(package.loaders or package.searchers, 2, moon_loader)
+  return insert(package.loaders, 2, moon_loader)
 end
-if not (_G.moon_no_loader) then
+if not _G.moon_no_loader then
   init_loader()
 end
-loadstring = function(...)
-  local options, str, chunk_name, mode, env = get_options(...)
-  chunk_name = chunk_name or "=(moonscript.loadstring)"
+loadstring = function(str, chunk_name)
   local passed, code, ltable = pcall(function()
-    return to_lua(str, options)
+    return to_lua(str)
   end)
   if not passed then
     error(chunk_name .. ": " .. code, 2)
@@ -82,31 +74,17 @@ loadstring = function(...)
   if chunk_name then
     line_tables[chunk_name] = ltable
   end
-  return (lua.loadstring or lua.load)(code, chunk_name, unpack({
-    mode,
-    env
-  }))
+  return lua.loadstring(code, chunk_name or "=(moonscript.loadstring)")
 end
-loadfile = function(fname, ...)
+loadfile = function(fname)
   local file, err = io.open(fname)
   if not file then
     return nil, err
   end
   local text = assert(file:read("*a"))
-  file:close()
-  return loadstring(text, fname, ...)
+  return loadstring(text, fname)
 end
-dofile = function(...)
-  local f = assert(loadfile(...))
+dofile = function(fname)
+  local f = assert(loadfile(fname))
   return f()
 end
-return {
-  _NAME = "moonscript",
-  to_lua = to_lua,
-  moon_chunk = moon_chunk,
-  moon_loader = moon_loader,
-  dirsep = dirsep,
-  dofile = dofile,
-  loadfile = loadfile,
-  loadstring = loadstring
-}
