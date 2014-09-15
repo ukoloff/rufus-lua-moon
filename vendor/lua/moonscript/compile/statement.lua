@@ -1,13 +1,16 @@
+module("moonscript.compile", package.seeall)
 local util = require("moonscript.util")
-local data = require("moonscript.data")
-local reversed, unpack = util.reversed, util.unpack
+require("moonscript.compile.format")
+local dump = require("moonscript.dump")
+local transform = require("moonscript.transform")
+local reversed = util.reversed
 local ntype
 do
   local _table_0 = require("moonscript.types")
   ntype = _table_0.ntype
 end
 local concat, insert = table.concat, table.insert
-local statement_compilers = {
+line_compile = {
   raw = function(self, node)
     return self:add(node[2])
   end,
@@ -26,12 +29,12 @@ local statement_compilers = {
         local _with_0 = self:line("local ")
         _with_0:append_list((function()
           local _accum_0 = { }
-          local _len_0 = 1
+          local _len_0 = 0
           local _list_0 = undeclared
           for _index_0 = 1, #_list_0 do
             local name = _list_0[_index_0]
-            _accum_0[_len_0] = self:name(name)
             _len_0 = _len_0 + 1
+            _accum_0[_len_0] = self:name(name)
           end
           return _accum_0
         end)(), ", ")
@@ -46,12 +49,12 @@ local statement_compilers = {
       local _with_0 = self:line("local ")
       _with_0:append_list((function()
         local _accum_0 = { }
-        local _len_0 = 1
+        local _len_0 = 0
         local _list_0 = names
         for _index_0 = 1, #_list_0 do
           local name = _list_0[_index_0]
-          _accum_0[_len_0] = self:name(name)
           _len_0 = _len_0 + 1
+          _accum_0[_len_0] = self:name(name)
         end
         return _accum_0
       end)(), ", ")
@@ -80,12 +83,12 @@ local statement_compilers = {
         end
         _with_0:append_list((function()
           local _accum_0 = { }
-          local _len_0 = 1
+          local _len_0 = 0
           local _list_0 = names
           for _index_0 = 1, #_list_0 do
             local name = _list_0[_index_0]
-            _accum_0[_len_0] = self:value(name)
             _len_0 = _len_0 + 1
+            _accum_0[_len_0] = self:value(name)
           end
           return _accum_0
         end)(), ", ")
@@ -93,12 +96,12 @@ local statement_compilers = {
       _with_0:append(" = ")
       _with_0:append_list((function()
         local _accum_0 = { }
-        local _len_0 = 1
+        local _len_0 = 0
         local _list_0 = values
         for _index_0 = 1, #_list_0 do
           local v = _list_0[_index_0]
-          _accum_0[_len_0] = self:value(v)
           _len_0 = _len_0 + 1
+          _accum_0[_len_0] = self:value(v)
         end
         return _accum_0
       end)(), ", ")
@@ -183,34 +186,34 @@ local statement_compilers = {
     do
       local _with_0 = self:line()
       _with_0:append("for ")
+      _with_0:append_list((function()
+        local _accum_0 = { }
+        local _len_0 = 0
+        local _list_0 = names
+        for _index_0 = 1, #_list_0 do
+          local name = _list_0[_index_0]
+          _len_0 = _len_0 + 1
+          _accum_0[_len_0] = self:name(name)
+        end
+        return _accum_0
+      end)(), ", ")
+      _with_0:append(" in ")
+      _with_0:append_list((function()
+        local _accum_0 = { }
+        local _len_0 = 0
+        local _list_0 = exps
+        for _index_0 = 1, #_list_0 do
+          local exp = _list_0[_index_0]
+          _len_0 = _len_0 + 1
+          _accum_0[_len_0] = self:value(exp)
+        end
+        return _accum_0
+      end)(), ",")
+      _with_0:append(" do")
       loop = _with_0
     end
     do
       local _with_0 = self:block(loop)
-      loop:append_list((function()
-        local _accum_0 = { }
-        local _len_0 = 1
-        local _list_0 = names
-        for _index_0 = 1, #_list_0 do
-          local name = _list_0[_index_0]
-          _accum_0[_len_0] = _with_0:name(name, false)
-          _len_0 = _len_0 + 1
-        end
-        return _accum_0
-      end)(), ", ")
-      loop:append(" in ")
-      loop:append_list((function()
-        local _accum_0 = { }
-        local _len_0 = 1
-        local _list_0 = exps
-        for _index_0 = 1, #_list_0 do
-          local exp = _list_0[_index_0]
-          _accum_0[_len_0] = self:value(exp)
-          _len_0 = _len_0 + 1
-        end
-        return _accum_0
-      end)(), ",")
-      loop:append(" do")
       _with_0:declare(names)
       _with_0:stms(block)
       return _with_0
@@ -243,7 +246,4 @@ local statement_compilers = {
       return _with_0
     end
   end
-}
-return {
-  statement_compilers = statement_compilers
 }
