@@ -10,6 +10,7 @@ local types = require"moonscript.types"
 
 local ntype = types.ntype
 
+local dump = util.dump
 local trim = util.trim
 
 local getfenv = util.getfenv
@@ -50,8 +51,7 @@ local AlphaNum = R("az", "AZ", "09", "__")
 local _Name = C(R("az", "AZ", "__") * AlphaNum^0)
 local Name = Space * _Name
 
-local Num = P"0x" * R("09", "af", "AF")^1 * (S"uU"^-1 * S"lL"^2)^-1 +
-    R"09"^1 * (S"uU"^-1 * S"lL"^2) +
+local Num = P"0x" * R("09", "af", "AF")^1 +
 	(
 		R"09"^1 * (P"." * R"09"^1)^-1 +
 		P"." * R"09"^1
@@ -125,7 +125,7 @@ end
 
 local function extract_line(str, start_pos)
 	str = str:sub(start_pos)
-	local m = str:match"^(.-)\n"
+	m = str:match"^(.-)\n"
 	if m then return m end
 	return str:match"^.-$"
 end
@@ -155,6 +155,13 @@ local function got(what)
 	end)
 end
 
+local function flatten(tbl)
+	if #tbl == 1 then
+		return tbl[1]
+	end
+	return tbl
+end
+
 local function flatten_or_mark(name)
 	return function(tbl)
 		if #tbl == 1 then return tbl[1] end
@@ -167,12 +174,8 @@ end
 local _chain_assignable = { index = true, dot = true, slice = true }
 
 local function is_assignable(node)
-	if node == "..." then
-		return false
-	end
-
 	local t = ntype(node)
-	return t == "ref" or t == "self" or t == "value" or t == "self_class" or
+	return t == "self" or t == "value" or t == "self_class" or
 		t == "chain" and _chain_assignable[ntype(node[#node])] or
 		t == "table"
 end
@@ -224,9 +227,9 @@ local function symx(chars)
 end
 
 local function simple_string(delim, allow_interpolation)
-	local inner = P('\\'..delim) + "\\\\" + (1 - P(delim))
+	local inner = P('\\'..delim) + "\\\\" + (1 - S('\r\n'..delim))
 	if allow_interpolation then
-		local inter = symx"#{" * V"Exp" * sym"}"
+		inter = symx"#{" * V"Exp" * sym"}"
 		inner = (C((inner - inter)^1) + inter / mark"interpolate")^0
 	else
 		inner = C(inner^0)
@@ -270,6 +273,16 @@ end
 local function wrap_decorator(stm, dec)
 	if not dec then return stm end
 	return { "decorated", stm, dec }
+end
+
+-- wrap if statement if there is a conditional decorator
+local function wrap_if(stm, cond)
+	if cond then
+		local pass, fail = unpack(cond)
+		if fail then fail = {"else", {fail}} end
+		return {"if", cond[2], {stm}, fail}
+	end
+	return stm
 end
 
 local function check_lua_string(str, pos, right, left)
@@ -325,12 +338,18 @@ local build_grammar = wrap_env(function()
 		return true
 	end
 
+	local function enable_do(str_pos)
+		_do_stack:push(true)
+		return true
+	end
+
 	local function pop_do(str, pos)
 		if nil == _do_stack:pop() then error("unexpected do pop") end
 		return true
 	end
 
 	local DisableDo = Cmt("", disable_do)
+	local EnableDo = Cmt("", enable_do)
 	local PopDo = Cmt("", pop_do)
 
 	local keywords = {}
@@ -359,7 +378,8 @@ local build_grammar = wrap_env(function()
 		_Name / mark"self" + Cc"self")
 
 	local KeyName = SelfName + Space * _Name / mark"key_literal"
-	local VarArg = Space * P"..." / trim
+
+	local Name = SelfName + Name + Space * "..." / trim
 
 	local g = lpeg.P{
 		File,
@@ -389,9 +409,11 @@ local build_grammar = wrap_env(function()
 
 		Local = key"local" * ((op"*" + op"^") / mark"declare_glob" + Ct(NameList) / mark"declare_with_shadows"),
 
-		Import = key"import" * Ct(ImportNameList) * SpaceBreak^0 * key"from" * Exp / mark"import",
+		Import = key"import" *  Ct(ImportNameList) * key"from" * Exp / mark"import",
 		ImportName = (sym"\\" * Ct(Cc"colon_stub" * Name) + Name),
-		ImportNameList = SpaceBreak^0 * ImportName * ((SpaceBreak^1 + sym"," * SpaceBreak^0) * ImportName)^0,
+		ImportNameList = ImportName * (sym"," * ImportName)^0,
+
+		NameList = Name * (sym"," * Name)^0,
 
 		BreakLoop = Ct(key"break"/trim) + Ct(key"continue"/trim),
 
@@ -439,7 +461,8 @@ local build_grammar = wrap_env(function()
 		-- we can ignore precedence for now
 		OtherOps = op"or" + op"and" + op"<=" + op">=" + op"~=" + op"!=" + op"==" + op".." + op"<" + op">",
 
-		Assignable = Cmt(DotChain + Chain, check_assignable) + Name + SelfName,
+		Assignable = Cmt(DotChain + Chain, check_assignable) + Name,
+		AssignableList = Assignable * (sym"," * Assignable)^0,
 
 		Exp = Ct(Value * ((OtherOps + FactorOp + TermOp) * Value)^0) / flatten_or_mark"exp",
 
@@ -488,7 +511,7 @@ local build_grammar = wrap_env(function()
 		LuaStringOpen = sym"[" * P"="^0 * "[" / trim,
 		LuaStringClose = "]" * P"="^0 * "]",
 
-		Callable = pos(Name / mark"ref") + SelfName + VarArg + Parens / mark"parens",
+		Callable = Name + Parens / mark"parens",
 		Parens = sym"(" * Exp * sym")",
 
 		FnArgs = symx"(" * Ct(ExpList^-1) * sym")" + sym"!" * -P"=" * Ct"",
@@ -552,7 +575,7 @@ local build_grammar = wrap_env(function()
 			op"*" + op"^" +
 			Ct(NameList) * (sym"=" * Ct(ExpListLow))^-1) / mark"export",
 
-		KeyValue = (sym":" * -SomeSpace *  Name) / self_assign + Ct((KeyName + sym"[" * Exp * sym"]" + DoubleString + SingleString) * symx":" * (Exp + TableBlock)),
+		KeyValue = (sym":" * Name) / self_assign + Ct((KeyName + sym"[" * Exp * sym"]" + DoubleString + SingleString) * symx":" * (Exp + TableBlock)),
 		KeyValueList = KeyValue * (sym"," * KeyValue)^0,
 		KeyValueLine = CheckIndent * KeyValueList * sym","^-1,
 
@@ -560,8 +583,8 @@ local build_grammar = wrap_env(function()
 			(key"using" * Ct(NameList + Space * "nil") + Ct"") *
 			sym")" + Ct"" * Ct"",
 
-		FnArgDefList = FnArgDef * (sym"," * FnArgDef)^0 * (sym"," * Ct(VarArg))^0 + Ct(VarArg),
-		FnArgDef = Ct((Name + SelfName) * (sym"=" * Exp)^-1),
+		FnArgDefList = FnArgDef * (sym"," * FnArgDef)^0,
+		FnArgDef = Ct(Name * (sym"=" * Exp)^-1),
 
 		FunLit = FnArgsDef *
 			(sym"->" * Cc"slim" + sym"=>" * Cc"fat") *
@@ -574,7 +597,7 @@ local build_grammar = wrap_env(function()
 		ExpList = Exp * (sym"," * Exp)^0,
 		ExpListLow = Exp * ((sym"," + sym";") * Exp)^0,
 
-		InvokeArgs = -P"-" * (ExpList * (sym"," * (TableBlock + SpaceBreak * Advance * ArgBlock * TableBlock^-1) + TableBlock)^-1 + TableBlock),
+		InvokeArgs = ExpList * (sym"," * (TableBlock + SpaceBreak * Advance * ArgBlock * TableBlock^-1) + TableBlock)^-1 + TableBlock,
 		ArgBlock = ArgLine * (sym"," * SpaceBreak * ArgLine)^0 * PopIndent,
 		ArgLine = CheckIndent * ExpList
 	}
@@ -592,17 +615,13 @@ local build_grammar = wrap_env(function()
 			end
 
 			local tree
-			local parse_args = {...}
-
-			local pass, err = xpcall(function()
-				tree = self._g:match(str, unpack(parse_args))
-			end, function(err)
-				return debug.traceback(err, 2)
-			end)
+			local pass, err = pcall(function(...)
+				tree = self._g:match(str, ...)
+			end, ...)
 
 			-- regular error, let it bubble up
 			if type(err) == "string" then
-				return nil, err
+				error(err)
 			end
 
 			if not tree then

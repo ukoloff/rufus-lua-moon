@@ -3,32 +3,36 @@ local dump = require("moonscript.dump")
 local transform = require("moonscript.transform")
 local NameProxy, LocalName
 do
-  local _obj_0 = require("moonscript.transform.names")
-  NameProxy, LocalName = _obj_0.NameProxy, _obj_0.LocalName
+  local _table_0 = require("moonscript.transform.names")
+  NameProxy, LocalName = _table_0.NameProxy, _table_0.LocalName
 end
 local Set
 do
-  local _obj_0 = require("moonscript.data")
-  Set = _obj_0.Set
+  local _table_0 = require("moonscript.data")
+  Set = _table_0.Set
 end
 local ntype, has_value
 do
-  local _obj_0 = require("moonscript.types")
-  ntype, has_value = _obj_0.ntype, _obj_0.has_value
+  local _table_0 = require("moonscript.types")
+  ntype, has_value = _table_0.ntype, _table_0.has_value
 end
-local statement_compilers = require("moonscript.compile.statement")
-local value_compilers = require("moonscript.compile.value")
-local concat, insert
+local statement_compilers
 do
-  local _obj_0 = table
-  concat, insert = _obj_0.concat, _obj_0.insert
+  local _table_0 = require("moonscript.compile.statement")
+  statement_compilers = _table_0.statement_compilers
 end
-local pos_to_line, get_closest_line, trim, unpack
-pos_to_line, get_closest_line, trim, unpack = util.pos_to_line, util.get_closest_line, util.trim, util.unpack
+local value_compilers
+do
+  local _table_0 = require("moonscript.compile.value")
+  value_compilers = _table_0.value_compilers
+end
+local concat, insert = table.concat, table.insert
+local pos_to_line, get_closest_line, trim, unpack = util.pos_to_line, util.get_closest_line, util.trim, util.unpack
 local mtype = util.moon.type
 local indent_char = "  "
 local Line, DelayedLine, Lines, Block, RootBlock
 do
+  local _parent_0 = nil
   local _base_0 = {
     mark_pos = function(self, pos, line)
       if line == nil then
@@ -61,10 +65,6 @@ do
         local _exp_0 = mtype(l)
         if "string" == _exp_0 or DelayedLine == _exp_0 then
           line_no = line_no + 1
-          out[line_no] = posmap[i]
-          for _ in l:gmatch("\n") do
-            line_no = line_no + 1
-          end
           out[line_no] = posmap[i]
         elseif Lines == _exp_0 then
           local _
@@ -102,6 +102,7 @@ do
             end
           end
           insert(buffer, "\n")
+          local last = l
         elseif Lines == _exp_0 then
           l:flatten(indent and indent .. indent_char or indent_char, buffer)
         else
@@ -114,14 +115,17 @@ do
       local strip
       strip = function(t)
         if "table" == type(t) then
-          local _accum_0 = { }
-          local _len_0 = 1
-          for _index_0 = 1, #t do
-            local v = t[_index_0]
-            _accum_0[_len_0] = strip(v)
-            _len_0 = _len_0 + 1
-          end
-          return _accum_0
+          return (function()
+            local _accum_0 = { }
+            local _len_0 = 1
+            local _list_0 = t
+            for _index_0 = 1, #_list_0 do
+              local v = _list_0[_index_0]
+              _accum_0[_len_0] = strip(v)
+              _len_0 = _len_0 + 1
+            end
+            return _accum_0
+          end)()
         else
           return t
         end
@@ -130,14 +134,25 @@ do
     end
   }
   _base_0.__index = _base_0
+  if _parent_0 then
+    setmetatable(_base_0, _parent_0.__base)
+  end
   local _class_0 = setmetatable({
     __init = function(self)
       self.posmap = { }
     end,
     __base = _base_0,
-    __name = "Lines"
+    __name = "Lines",
+    __parent = _parent_0
   }, {
-    __index = _base_0,
+    __index = function(cls, name)
+      local val = rawget(_base_0, name)
+      if val == nil and _parent_0 then
+        return _parent_0[name]
+      else
+        return val
+      end
+    end,
     __call = function(cls, ...)
       local _self_0 = setmetatable({}, _base_0)
       cls.__init(_self_0, ...)
@@ -145,35 +160,48 @@ do
     end
   })
   _base_0.__class = _class_0
+  if _parent_0 and _parent_0.__inherited then
+    _parent_0.__inherited(_parent_0, _class_0)
+  end
   Lines = _class_0
 end
 do
+  local _parent_0 = nil
   local _base_0 = {
     pos = nil,
+    _append_single = function(self, item)
+      if Line == mtype(item) then
+        if not (self.pos) then
+          self.pos = item.pos
+        end
+        local _list_0 = item
+        for _index_0 = 1, #_list_0 do
+          local value = _list_0[_index_0]
+          self:_append_single(value)
+        end
+      else
+        insert(self, item)
+      end
+      return nil
+    end,
     append_list = function(self, items, delim)
       for i = 1, #items do
-        self:append(items[i])
+        self:_append_single(items[i])
         if i < #items then
           insert(self, delim)
         end
       end
       return nil
     end,
-    append = function(self, first, ...)
-      if Line == mtype(first) then
-        if not (self.pos) then
-          self.pos = first.pos
-        end
-        for _index_0 = 1, #first do
-          local value = first[_index_0]
-          self:append(value)
-        end
-      else
-        insert(self, first)
+    append = function(self, ...)
+      local _list_0 = {
+        ...
+      }
+      for _index_0 = 1, #_list_0 do
+        local item = _list_0[_index_0]
+        self:_append_single(item)
       end
-      if ... then
-        return self:append(...)
-      end
+      return nil
     end,
     render = function(self, buffer)
       local current = { }
@@ -182,13 +210,14 @@ do
         buffer:add(concat(current))
         return buffer:mark_pos(self.pos)
       end
-      for _index_0 = 1, #self do
-        local chunk = self[_index_0]
+      local _list_0 = self
+      for _index_0 = 1, #_list_0 do
+        local chunk = _list_0[_index_0]
         local _exp_0 = mtype(chunk)
         if Block == _exp_0 then
-          local _list_0 = chunk:render(Lines())
-          for _index_1 = 1, #_list_0 do
-            local block_chunk = _list_0[_index_1]
+          local _list_1 = chunk:render(Lines())
+          for _index_1 = 1, #_list_1 do
+            local block_chunk = _list_1[_index_1]
             if "string" == type(block_chunk) then
               insert(current, block_chunk)
             else
@@ -201,7 +230,7 @@ do
           insert(current, chunk)
         end
       end
-      if current[1] then
+      if #current > 0 then
         add_current()
       end
       return buffer
@@ -211,12 +240,27 @@ do
     end
   }
   _base_0.__index = _base_0
+  if _parent_0 then
+    setmetatable(_base_0, _parent_0.__base)
+  end
   local _class_0 = setmetatable({
-    __init = function() end,
+    __init = function(self, ...)
+      if _parent_0 then
+        return _parent_0.__init(self, ...)
+      end
+    end,
     __base = _base_0,
-    __name = "Line"
+    __name = "Line",
+    __parent = _parent_0
   }, {
-    __index = _base_0,
+    __index = function(cls, name)
+      local val = rawget(_base_0, name)
+      if val == nil and _parent_0 then
+        return _parent_0[name]
+      else
+        return val
+      end
+    end,
     __call = function(cls, ...)
       local _self_0 = setmetatable({}, _base_0)
       cls.__init(_self_0, ...)
@@ -224,9 +268,13 @@ do
     end
   })
   _base_0.__class = _class_0
+  if _parent_0 and _parent_0.__inherited then
+    _parent_0.__inherited(_parent_0, _class_0)
+  end
   Line = _class_0
 end
 do
+  local _parent_0 = nil
   local _base_0 = {
     prepare = function() end,
     render = function(self)
@@ -235,14 +283,25 @@ do
     end
   }
   _base_0.__index = _base_0
+  if _parent_0 then
+    setmetatable(_base_0, _parent_0.__base)
+  end
   local _class_0 = setmetatable({
     __init = function(self, fn)
       self.prepare = fn
     end,
     __base = _base_0,
-    __name = "DelayedLine"
+    __name = "DelayedLine",
+    __parent = _parent_0
   }, {
-    __index = _base_0,
+    __index = function(cls, name)
+      local val = rawget(_base_0, name)
+      if val == nil and _parent_0 then
+        return _parent_0[name]
+      else
+        return val
+      end
+    end,
     __call = function(cls, ...)
       local _self_0 = setmetatable({}, _base_0)
       cls.__init(_self_0, ...)
@@ -250,15 +309,18 @@ do
     end
   })
   _base_0.__class = _class_0
+  if _parent_0 and _parent_0.__inherited then
+    _parent_0.__inherited(_parent_0, _class_0)
+  end
   DelayedLine = _class_0
 end
 do
+  local _parent_0 = nil
   local _base_0 = {
     header = "do",
     footer = "end",
     export_all = false,
     export_proper = false,
-    value_compilers = value_compilers,
     __tostring = function(self)
       local h
       if "string" == type(self.header) then
@@ -292,14 +354,14 @@ do
       end
     end,
     declare = function(self, names)
-      local undeclared
-      do
+      local undeclared = (function()
         local _accum_0 = { }
         local _len_0 = 1
-        for _index_0 = 1, #names do
+        local _list_0 = names
+        for _index_0 = 1, #_list_0 do
           local _continue_0 = false
           repeat
-            local name = names[_index_0]
+            local name = _list_0[_index_0]
             local is_local = false
             local real_name
             local _exp_0 = mtype(name)
@@ -308,8 +370,6 @@ do
               real_name = name:get_name(self)
             elseif NameProxy == _exp_0 then
               real_name = name:get_name(self)
-            elseif "table" == _exp_0 then
-              real_name = name[1] == "ref" and name[2]
             elseif "string" == _exp_0 then
               real_name = name
             end
@@ -331,8 +391,8 @@ do
             break
           end
         end
-        undeclared = _accum_0
-      end
+        return _accum_0
+      end)()
       return undeclared
     end,
     whitelist_names = function(self, names)
@@ -369,21 +429,6 @@ do
         return yes
       end
     end,
-    is_local = function(self, node)
-      local t = mtype(node)
-      if t == "string" then
-        return self:has_name(node, false)
-      end
-      if t == NameProxy or t == LocalName then
-        return true
-      end
-      if t == "table" then
-        if node[1] == "ref" or (node[1] == "chain" and #node == 2) then
-          return self:is_local(node[2])
-        end
-      end
-      return false
-    end,
     free_name = function(self, prefix, dont_put)
       prefix = prefix or "moon"
       local searching = true
@@ -415,14 +460,8 @@ do
       })
       return name
     end,
-    add = function(self, item, pos)
-      do
-        local _with_0 = self._lines
-        _with_0:add(item)
-        if pos then
-          _with_0:mark_pos(pos)
-        end
-      end
+    add = function(self, item)
+      self._lines:add(item)
       return item
     end,
     render = function(self, buffer)
@@ -457,14 +496,10 @@ do
     end,
     is_value = function(self, node)
       local t = ntype(node)
-      return self.value_compilers[t] ~= nil or t == "value"
+      return value_compilers[t] ~= nil or t == "value"
     end,
     name = function(self, node, ...)
-      if type(node) == "string" then
-        return node
-      else
-        return self:value(node, ...)
-      end
+      return self:value(node, ...)
     end,
     value = function(self, node, ...)
       node = self.transform.value(node)
@@ -474,13 +509,9 @@ do
       else
         action = node[1]
       end
-      local fn = self.value_compilers[action]
-      if not (fn) then
-        error({
-          "compile-error",
-          "Failed to find value compiler for: " .. dump.value(node),
-          node[-1]
-        })
+      local fn = value_compilers[action]
+      if not fn then
+        error("Failed to compile value: " .. dump.value(node))
       end
       local out = fn(self, node, ...)
       if type(node) == "table" and node[-1] then
@@ -502,8 +533,9 @@ do
         _with_0:append_list((function()
           local _accum_0 = { }
           local _len_0 = 1
-          for _index_0 = 1, #values do
-            local v = values[_index_0]
+          local _list_0 = values
+          for _index_0 = 1, #_list_0 do
+            local v = _list_0[_index_0]
             _accum_0[_len_0] = self:value(v)
             _len_0 = _len_0 + 1
           end
@@ -551,7 +583,10 @@ do
         error("deprecated stms call, use transformer")
       end
       local current_stms, current_stm_i
-      current_stms, current_stm_i = self.current_stms, self.current_stm_i
+      do
+        local _obj_0 = self
+        current_stms, current_stm_i = _obj_0.current_stms, _obj_0.current_stm_i
+      end
       self.current_stms = stms
       for i = 1, #stms do
         self.current_stm_i = i
@@ -571,6 +606,9 @@ do
     end
   }
   _base_0.__index = _base_0
+  if _parent_0 then
+    setmetatable(_base_0, _parent_0.__base)
+  end
   local _class_0 = setmetatable({
     __init = function(self, parent, header, footer)
       self.parent, self.header, self.footer = parent, header, footer
@@ -579,9 +617,10 @@ do
       self._state = { }
       self._listeners = { }
       do
+        local _with_0 = transform
         self.transform = {
-          value = transform.Value:bind(self),
-          statement = transform.Statement:bind(self)
+          value = _with_0.Value:bind(self),
+          statement = _with_0.Statement:bind(self)
         }
       end
       if self.parent then
@@ -598,9 +637,17 @@ do
       end
     end,
     __base = _base_0,
-    __name = "Block"
+    __name = "Block",
+    __parent = _parent_0
   }, {
-    __index = _base_0,
+    __index = function(cls, name)
+      local val = rawget(_base_0, name)
+      if val == nil and _parent_0 then
+        return _parent_0[name]
+      else
+        return val
+      end
+    end,
     __call = function(cls, ...)
       local _self_0 = setmetatable({}, _base_0)
       cls.__init(_self_0, ...)
@@ -608,6 +655,9 @@ do
     end
   })
   _base_0.__class = _class_0
+  if _parent_0 and _parent_0.__inherited then
+    _parent_0.__inherited(_parent_0, _class_0)
+  end
   Block = _class_0
 end
 do
@@ -631,7 +681,9 @@ do
     end
   }
   _base_0.__index = _base_0
-  setmetatable(_base_0, _parent_0.__base)
+  if _parent_0 then
+    setmetatable(_base_0, _parent_0.__base)
+  end
   local _class_0 = setmetatable({
     __init = function(self, options)
       self.options = options
@@ -644,7 +696,7 @@ do
   }, {
     __index = function(cls, name)
       local val = rawget(_base_0, name)
-      if val == nil then
+      if val == nil and _parent_0 then
         return _parent_0[name]
       else
         return val
@@ -657,24 +709,20 @@ do
     end
   })
   _base_0.__class = _class_0
-  if _parent_0.__inherited then
+  if _parent_0 and _parent_0.__inherited then
     _parent_0.__inherited(_parent_0, _class_0)
   end
   RootBlock = _class_0
 end
 local format_error
 format_error = function(msg, pos, file_str)
-  local line_message
-  if pos then
-    local line = pos_to_line(file_str, pos)
-    local line_str
-    line_str, line = get_closest_line(file_str, line)
-    line_str = line_str or ""
-    line_message = (" [%d] >>    %s"):format(line, trim(line_str))
-  end
+  local line = pos_to_line(file_str, pos)
+  local line_str
+  line_str, line = get_closest_line(file_str, line)
+  line_str = line_str or ""
   return concat({
     "Compile error: " .. msg,
-    line_message
+    (" [%d] >>    %s"):format(line, trim(line_str))
   }, "\n")
 end
 local value
@@ -698,29 +746,31 @@ tree = function(tree, options)
     return scope:root_stms(tree)
   end)
   local success, err = coroutine.resume(runner)
-  if not (success) then
-    local error_msg, error_pos
+  if not success then
+    local error_msg
     if type(err) == "table" then
-      local _exp_0 = err[1]
-      if "user-error" == _exp_0 or "compile-error" == _exp_0 then
-        error_msg, error_pos = unpack(err, 2)
+      local error_type = err[1]
+      if error_type == "user-error" then
+        error_msg = err[2]
       else
-        error_msg, error_pos = error("Unknown error thrown", util.dump(error_msg))
+        error_msg = error("Unknown error thrown", util.dump(error_msg))
       end
     else
-      error_msg, error_pos = concat({
+      error_msg = concat({
         err,
         debug.traceback(runner)
       }, "\n")
     end
-    return nil, error_msg, error_pos or scope.last_pos
+    return nil, error_msg, scope.last_pos
+  else
+    local lua_code = scope:render()
+    local posmap = scope._lines:flatten_posmap()
+    return lua_code, posmap
   end
-  local lua_code = scope:render()
-  local posmap = scope._lines:flatten_posmap()
-  return lua_code, posmap
 end
 do
-  local data = require("moonscript.data")
+  local _with_0 = require("moonscript.data")
+  local data = _with_0
   for name, cls in pairs({
     Line = Line,
     Lines = Lines,

@@ -1,17 +1,13 @@
 local util = require("moonscript.util")
-local reversed, unpack
-reversed, unpack = util.reversed, util.unpack
+local data = require("moonscript.data")
+local reversed, unpack = util.reversed, util.unpack
 local ntype
 do
-  local _obj_0 = require("moonscript.types")
-  ntype = _obj_0.ntype
+  local _table_0 = require("moonscript.types")
+  ntype = _table_0.ntype
 end
-local concat, insert
-do
-  local _obj_0 = table
-  concat, insert = _obj_0.concat, _obj_0.insert
-end
-return {
+local concat, insert = table.concat, table.insert
+local statement_compilers = {
   raw = function(self, node)
     return self:add(node[2])
   end,
@@ -31,8 +27,9 @@ return {
         _with_0:append_list((function()
           local _accum_0 = { }
           local _len_0 = 1
-          for _index_0 = 1, #undeclared do
-            local name = undeclared[_index_0]
+          local _list_0 = undeclared
+          for _index_0 = 1, #_list_0 do
+            local name = _list_0[_index_0]
             _accum_0[_len_0] = self:name(name)
             _len_0 = _len_0 + 1
           end
@@ -50,8 +47,9 @@ return {
       _with_0:append_list((function()
         local _accum_0 = { }
         local _len_0 = 1
-        for _index_0 = 1, #names do
-          local name = names[_index_0]
+        local _list_0 = names
+        for _index_0 = 1, #_list_0 do
+          local name = _list_0[_index_0]
           _accum_0[_len_0] = self:name(name)
           _len_0 = _len_0 + 1
         end
@@ -78,13 +76,14 @@ return {
         _with_0:append(declare)
       else
         if #undeclared > 0 then
-          self:add(declare, node[-1])
+          self:add(declare)
         end
         _with_0:append_list((function()
           local _accum_0 = { }
           local _len_0 = 1
-          for _index_0 = 1, #names do
-            local name = names[_index_0]
+          local _list_0 = names
+          for _index_0 = 1, #_list_0 do
+            local name = _list_0[_index_0]
             _accum_0[_len_0] = self:value(name)
             _len_0 = _len_0 + 1
           end
@@ -95,8 +94,9 @@ return {
       _with_0:append_list((function()
         local _accum_0 = { }
         local _len_0 = 1
-        for _index_0 = 1, #values do
-          local v = values[_index_0]
+        local _list_0 = values
+        for _index_0 = 1, #_list_0 do
+          local v = _list_0[_index_0]
           _accum_0[_len_0] = self:value(v)
           _len_0 = _len_0 + 1
         end
@@ -139,8 +139,9 @@ return {
       current.next = next
       current = next
     end
-    for _index_0 = 4, #node do
-      cond = node[_index_0]
+    local _list_0 = node
+    for _index_0 = 4, #_list_0 do
+      cond = _list_0[_index_0]
       add_clause(cond)
     end
     return root
@@ -189,8 +190,9 @@ return {
       loop:append_list((function()
         local _accum_0 = { }
         local _len_0 = 1
-        for _index_0 = 1, #names do
-          local name = names[_index_0]
+        local _list_0 = names
+        for _index_0 = 1, #_list_0 do
+          local name = _list_0[_index_0]
           _accum_0[_len_0] = _with_0:name(name, false)
           _len_0 = _len_0 + 1
         end
@@ -200,8 +202,9 @@ return {
       loop:append_list((function()
         local _accum_0 = { }
         local _len_0 = 1
-        for _index_0 = 1, #exps do
-          local exp = exps[_index_0]
+        local _list_0 = exps
+        for _index_0 = 1, #_list_0 do
+          local exp = _list_0[_index_0]
           _accum_0[_len_0] = self:value(exp)
           _len_0 = _len_0 + 1
         end
@@ -239,6 +242,8 @@ return {
       _with_0:stms(node[2])
       return _with_0
     end
-  end,
-  noop = function(self) end
+  end
+}
+return {
+  statement_compilers = statement_compilers
 }

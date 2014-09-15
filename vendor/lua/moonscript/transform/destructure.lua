@@ -1,51 +1,50 @@
 local ntype, mtype, build
 do
-  local _obj_0 = require("moonscript.types")
-  ntype, mtype, build = _obj_0.ntype, _obj_0.mtype, _obj_0.build
+  local _table_0 = require("moonscript.types")
+  ntype, mtype, build = _table_0.ntype, _table_0.mtype, _table_0.build
 end
 local NameProxy
 do
-  local _obj_0 = require("moonscript.transform.names")
-  NameProxy = _obj_0.NameProxy
+  local _table_0 = require("moonscript.transform.names")
+  NameProxy = _table_0.NameProxy
 end
-local insert
-do
-  local _obj_0 = table
-  insert = _obj_0.insert
-end
+local insert = table.insert
 local unpack
 do
-  local _obj_0 = require("moonscript.util")
-  unpack = _obj_0.unpack
+  local _table_0 = require("moonscript.util")
+  unpack = _table_0.unpack
 end
 local user_error
 do
-  local _obj_0 = require("moonscript.errors")
-  user_error = _obj_0.user_error
+  local _table_0 = require("moonscript.errors")
+  user_error = _table_0.user_error
 end
 local join
 join = function(...)
   do
-    local out = { }
+    local _with_0 = { }
+    local out = _with_0
     local i = 1
     local _list_0 = {
       ...
     }
     for _index_0 = 1, #_list_0 do
       local tbl = _list_0[_index_0]
-      for _index_1 = 1, #tbl do
-        local v = tbl[_index_1]
+      local _list_1 = tbl
+      for _index_1 = 1, #_list_1 do
+        local v = _list_1[_index_1]
         out[i] = v
         i = i + 1
       end
     end
-    return out
+    return _with_0
   end
 end
 local has_destructure
 has_destructure = function(names)
-  for _index_0 = 1, #names do
-    local n = names[_index_0]
+  local _list_0 = names
+  for _index_0 = 1, #_list_0 do
+    local n = _list_0[_index_0]
     if ntype(n) == "table" then
       return true
     end
@@ -79,15 +78,10 @@ extract_assign_names = function(name, accum, prefix)
       local key = tuple[1]
       local s
       if ntype(key) == "key_literal" then
-        local key_name = key[2]
-        if ntype(key_name) == "colon_stub" then
-          s = key_name
-        else
-          s = {
-            "dot",
-            key_name
-          }
-        end
+        s = {
+          "dot",
+          key[2]
+        }
       else
         s = {
           "index",
@@ -99,13 +93,13 @@ extract_assign_names = function(name, accum, prefix)
     suffix = join(prefix, {
       suffix
     })
-    local _exp_0 = ntype(value)
-    if "value" == _exp_0 or "ref" == _exp_0 or "chain" == _exp_0 or "self" == _exp_0 then
+    local t = ntype(value)
+    if t == "value" or t == "chain" or t == "self" then
       insert(accum, {
         value,
         suffix
       })
-    elseif "table" == _exp_0 then
+    elseif t == "table" then
       extract_assign_names(value, accum, suffix)
     else
       user_error("Can't destructure value of type: " .. tostring(ntype(value)))
@@ -114,7 +108,7 @@ extract_assign_names = function(name, accum, prefix)
   return accum
 end
 local build_assign
-build_assign = function(scope, destruct_literal, receiver)
+build_assign = function(destruct_literal, receiver)
   local extracted_names = extract_assign_names(destruct_literal)
   local names = { }
   local values = { }
@@ -124,11 +118,12 @@ build_assign = function(scope, destruct_literal, receiver)
     values
   }
   local obj
-  if scope:is_local(receiver) then
+  if mtype(receiver) == NameProxy then
     obj = receiver
   else
     do
-      obj = NameProxy("obj")
+      local _with_0 = NameProxy("obj")
+      obj = _with_0
       inner = build["do"]({
         build.assign_one(obj, receiver),
         {
@@ -137,13 +132,14 @@ build_assign = function(scope, destruct_literal, receiver)
           values
         }
       })
-      obj = obj
+      obj = _with_0
     end
   end
-  for _index_0 = 1, #extracted_names do
-    local tuple = extracted_names[_index_0]
+  local _list_0 = extracted_names
+  for _index_0 = 1, #_list_0 do
+    local tuple = _list_0[_index_0]
     insert(names, tuple[1])
-    insert(values, NameProxy.chain(obj, unpack(tuple[2])))
+    insert(values, obj:chain(unpack(tuple[2])))
   end
   return build.group({
     {
@@ -154,7 +150,7 @@ build_assign = function(scope, destruct_literal, receiver)
   })
 end
 local split_assign
-split_assign = function(scope, assign)
+split_assign = function(assign)
   local names, values = unpack(assign, 2)
   local g = { }
   local total_names = #names
@@ -186,7 +182,7 @@ split_assign = function(scope, assign)
           end)()
         })
       end
-      insert(g, build_assign(scope, n, values[i]))
+      insert(g, build_assign(n, values[i]))
       start = i + 1
     end
   end
@@ -197,15 +193,15 @@ split_assign = function(scope, assign)
         "_"
       }
     else
-      do
+      name_slice = (function()
         local _accum_0 = { }
         local _len_0 = 1
         for i = start, total_names do
           _accum_0[_len_0] = names[i]
           _len_0 = _len_0 + 1
         end
-        name_slice = _accum_0
-      end
+        return _accum_0
+      end)()
     end
     local value_slice
     if total_values < start then
@@ -213,15 +209,15 @@ split_assign = function(scope, assign)
         "nil"
       }
     else
-      do
+      value_slice = (function()
         local _accum_0 = { }
         local _len_0 = 1
         for i = start, total_values do
           _accum_0[_len_0] = values[i]
           _len_0 = _len_0 + 1
         end
-        value_slice = _accum_0
-      end
+        return _accum_0
+      end)()
     end
     insert(g, {
       "assign",

@@ -1,41 +1,45 @@
 local types = require("moonscript.types")
 local util = require("moonscript.util")
 local data = require("moonscript.data")
-local reversed, unpack
-reversed, unpack = util.reversed, util.unpack
-local ntype, mtype, build, smart_node, is_slice, value_is_singular
-ntype, mtype, build, smart_node, is_slice, value_is_singular = types.ntype, types.mtype, types.build, types.smart_node, types.is_slice, types.value_is_singular
-local insert
-do
-  local _obj_0 = table
-  insert = _obj_0.insert
-end
+local reversed, unpack = util.reversed, util.unpack
+local ntype, mtype, build, smart_node, is_slice, value_is_singular = types.ntype, types.mtype, types.build, types.smart_node, types.is_slice, types.value_is_singular
+local insert = table.insert
 local NameProxy, LocalName
 do
-  local _obj_0 = require("moonscript.transform.names")
-  NameProxy, LocalName = _obj_0.NameProxy, _obj_0.LocalName
+  local _table_0 = require("moonscript.transform.names")
+  NameProxy, LocalName = _table_0.NameProxy, _table_0.LocalName
 end
 local destructure = require("moonscript.transform.destructure")
-local NOOP = {
-  "noop"
-}
-local Run, apply_to_last, is_singular, extract_declarations, expand_elseif_assign, constructor_name, with_continue_listener, Transformer, construct_comprehension, Statement, Accumulator, default_accumulator, implicitly_return, Value
+local implicitly_return
+local Run
 do
+  local _parent_0 = nil
   local _base_0 = {
     call = function(self, state)
       return self.fn(state)
     end
   }
   _base_0.__index = _base_0
+  if _parent_0 then
+    setmetatable(_base_0, _parent_0.__base)
+  end
   local _class_0 = setmetatable({
     __init = function(self, fn)
       self.fn = fn
       self[1] = "run"
     end,
     __base = _base_0,
-    __name = "Run"
+    __name = "Run",
+    __parent = _parent_0
   }, {
-    __index = _base_0,
+    __index = function(cls, name)
+      local val = rawget(_base_0, name)
+      if val == nil and _parent_0 then
+        return _parent_0[name]
+      else
+        return val
+      end
+    end,
     __call = function(cls, ...)
       local _self_0 = setmetatable({}, _base_0)
       cls.__init(_self_0, ...)
@@ -43,8 +47,12 @@ do
     end
   })
   _base_0.__class = _class_0
+  if _parent_0 and _parent_0.__inherited then
+    _parent_0.__inherited(_parent_0, _class_0)
+  end
   Run = _class_0
 end
+local apply_to_last
 apply_to_last = function(stms, fn)
   local last_exp_id = 0
   for i = #stms, 1, -1 do
@@ -59,11 +67,7 @@ apply_to_last = function(stms, fn)
     local _len_0 = 1
     for i, stm in ipairs(stms) do
       if i == last_exp_id then
-        _accum_0[_len_0] = {
-          "transform",
-          stm,
-          fn
-        }
+        _accum_0[_len_0] = fn(stm)
       else
         _accum_0[_len_0] = stm
       end
@@ -72,6 +76,7 @@ apply_to_last = function(stms, fn)
     return _accum_0
   end)()
 end
+local is_singular
 is_singular = function(body)
   if #body ~= 1 then
     return false
@@ -82,6 +87,7 @@ is_singular = function(body)
     return body[1]
   end
 end
+local extract_declarations
 extract_declarations = function(self, body, start, out)
   if body == nil then
     body = self.current_stms
@@ -107,9 +113,7 @@ extract_declarations = function(self, body, start, out)
         local _list_0 = stm[2]
         for _index_0 = 1, #_list_0 do
           local name = _list_0[_index_0]
-          if ntype(name) == "ref" then
-            insert(out, name)
-          elseif type(name) == "string" then
+          if type(name) == "string" then
             insert(out, name)
           end
         end
@@ -124,6 +128,7 @@ extract_declarations = function(self, body, start, out)
   end
   return out
 end
+local expand_elseif_assign
 expand_elseif_assign = function(ifstm)
   for i = 4, #ifstm do
     local case = ifstm[i]
@@ -147,7 +152,8 @@ expand_elseif_assign = function(ifstm)
   end
   return ifstm
 end
-constructor_name = "new"
+local constructor_name = "new"
+local with_continue_listener
 with_continue_listener = function(body)
   local continue_name = nil
   return {
@@ -210,20 +216,10 @@ with_continue_listener = function(body)
     end)
   }
 end
+local Transformer
 do
+  local _parent_0 = nil
   local _base_0 = {
-    transform_once = function(self, scope, node, ...)
-      if self.seen_nodes[node] then
-        return node
-      end
-      self.seen_nodes[node] = true
-      local transformer = self.transformers[ntype(node)]
-      if transformer then
-        return transformer(scope, node, ...) or node
-      else
-        return node
-      end
-    end,
     transform = function(self, scope, node, ...)
       if self.seen_nodes[node] then
         return node
@@ -257,6 +253,9 @@ do
     end
   }
   _base_0.__index = _base_0
+  if _parent_0 then
+    setmetatable(_base_0, _parent_0.__base)
+  end
   local _class_0 = setmetatable({
     __init = function(self, transformers)
       self.transformers = transformers
@@ -265,9 +264,17 @@ do
       })
     end,
     __base = _base_0,
-    __name = "Transformer"
+    __name = "Transformer",
+    __parent = _parent_0
   }, {
-    __index = _base_0,
+    __index = function(cls, name)
+      local val = rawget(_base_0, name)
+      if val == nil and _parent_0 then
+        return _parent_0[name]
+      else
+        return val
+      end
+    end,
     __call = function(cls, ...)
       local _self_0 = setmetatable({}, _base_0)
       cls.__init(_self_0, ...)
@@ -275,8 +282,12 @@ do
     end
   })
   _base_0.__class = _class_0
+  if _parent_0 and _parent_0.__inherited then
+    _parent_0.__inherited(_parent_0, _class_0)
+  end
   Transformer = _class_0
 end
+local construct_comprehension
 construct_comprehension = function(inner, clauses)
   local current_stms = inner
   for _, clause in reversed(clauses) do
@@ -284,7 +295,10 @@ construct_comprehension = function(inner, clauses)
     local _exp_0 = t
     if "for" == _exp_0 then
       local name, bounds
-      _, name, bounds = clause[1], clause[2], clause[3]
+      do
+        local _obj_0 = clause
+        _, name, bounds = _obj_0[1], _obj_0[2], _obj_0[3]
+      end
       current_stms = {
         "for",
         name,
@@ -293,7 +307,10 @@ construct_comprehension = function(inner, clauses)
       }
     elseif "foreach" == _exp_0 then
       local names, iter
-      _, names, iter = clause[1], clause[2], clause[3]
+      do
+        local _obj_0 = clause
+        _, names, iter = _obj_0[1], _obj_0[2], _obj_0[3]
+      end
       current_stms = {
         "foreach",
         names,
@@ -304,7 +321,10 @@ construct_comprehension = function(inner, clauses)
       }
     elseif "when" == _exp_0 then
       local cond
-      _, cond = clause[1], clause[2]
+      do
+        local _obj_0 = clause
+        _, cond = _obj_0[1], _obj_0[2]
+      end
       current_stms = {
         "if",
         cond,
@@ -319,50 +339,22 @@ construct_comprehension = function(inner, clauses)
   end
   return current_stms[1]
 end
-Statement = Transformer({
-  transform = function(self, tuple)
-    local _, node, fn
-    _, node, fn = tuple[1], tuple[2], tuple[3]
-    return fn(node)
-  end,
+local Statement = Transformer({
   root_stms = function(self, body)
     return apply_to_last(body, implicitly_return(self))
-  end,
-  ["return"] = function(self, node)
-    local ret_val = node[2]
-    local ret_val_type = ntype(ret_val)
-    if ret_val_type == "explist" and #ret_val == 2 then
-      ret_val = ret_val[2]
-      ret_val_type = ntype(ret_val)
-    end
-    if types.cascading[ret_val_type] then
-      return implicitly_return(self)(ret_val)
-    end
-    if ret_val_type == "chain" or ret_val_type == "comprehension" or ret_val_type == "tblcomprehension" then
-      ret_val = Value:transform_once(self, ret_val)
-      if ntype(ret_val) == "block_exp" then
-        return build.group(apply_to_last(ret_val[2], function(stm)
-          return {
-            "return",
-            stm
-          }
-        end))
-      end
-    end
-    node[2] = ret_val
-    return node
   end,
   declare_glob = function(self, node)
     local names = extract_declarations(self)
     if node[2] == "^" then
-      do
+      names = (function()
         local _accum_0 = { }
         local _len_0 = 1
-        for _index_0 = 1, #names do
+        local _list_0 = names
+        for _index_0 = 1, #_list_0 do
           local _continue_0 = false
           repeat
-            local name = names[_index_0]
-            if not (name[2]:match("^%u")) then
+            local name = _list_0[_index_0]
+            if not (name:match("^%u")) then
               _continue_0 = true
               break
             end
@@ -375,8 +367,8 @@ Statement = Transformer({
             break
           end
         end
-        names = _accum_0
-      end
+        return _accum_0
+      end)()
     end
     return {
       "declare",
@@ -385,41 +377,8 @@ Statement = Transformer({
   end,
   assign = function(self, node)
     local names, values = unpack(node, 2)
-    local num_values = #values
-    local num_names = #values
-    if num_names == 1 and num_values == 1 then
-      local first_value = values[1]
-      local first_name = names[1]
-      local first_type = ntype(first_value)
-      if first_type == "chain" then
-        first_value = Value:transform_once(self, first_value)
-        first_type = ntype(first_value)
-      end
-      local _exp_0 = ntype(first_value)
-      if "block_exp" == _exp_0 then
-        local block_body = first_value[2]
-        local idx = #block_body
-        block_body[idx] = build.assign_one(first_name, block_body[idx])
-        return build.group({
-          {
-            "declare",
-            {
-              first_name
-            }
-          },
-          {
-            "do",
-            block_body
-          }
-        })
-      elseif "comprehension" == _exp_0 or "tblcomprehension" == _exp_0 or "foreach" == _exp_0 or "for" == _exp_0 or "while" == _exp_0 then
-        return build.assign_one(first_name, Value:transform_once(self, first_value))
-      else
-        values[1] = first_value
-      end
-    end
     local transformed
-    if num_values == 1 then
+    if #values == 1 then
       local value = values[1]
       local t = ntype(value)
       if t == "decorated" then
@@ -452,7 +411,7 @@ Statement = Transformer({
     end
     node = transformed or node
     if destructure.has_destructure(names) then
-      return destructure.split_assign(self, node)
+      return destructure.split_assign(node)
     end
     return node
   end,
@@ -483,10 +442,7 @@ Statement = Transformer({
         })
       else
         return build.group({
-          {
-            "export",
-            node[2]
-          },
+          node,
           build.assign({
             names = node[2],
             values = node[3]
@@ -518,44 +474,82 @@ Statement = Transformer({
   end,
   import = function(self, node)
     local _, names, source = unpack(node)
-    local table_values
-    do
+    local stubs = (function()
       local _accum_0 = { }
       local _len_0 = 1
-      for _index_0 = 1, #names do
-        local name = names[_index_0]
-        local dest_val
-        if ntype(name) == "colon_stub" then
-          dest_val = name[2]
+      local _list_0 = names
+      for _index_0 = 1, #_list_0 do
+        local name = _list_0[_index_0]
+        if type(name) == "table" then
+          _accum_0[_len_0] = name
         else
-          dest_val = name
-        end
-        local _value_0 = {
-          {
-            "key_literal",
+          _accum_0[_len_0] = {
+            "dot",
             name
-          },
-          dest_val
-        }
-        _accum_0[_len_0] = _value_0
+          }
+        end
         _len_0 = _len_0 + 1
       end
-      table_values = _accum_0
+      return _accum_0
+    end)()
+    local real_names = (function()
+      local _accum_0 = { }
+      local _len_0 = 1
+      local _list_0 = names
+      for _index_0 = 1, #_list_0 do
+        local name = _list_0[_index_0]
+        _accum_0[_len_0] = type(name) == "table" and name[2] or name
+        _len_0 = _len_0 + 1
+      end
+      return _accum_0
+    end)()
+    if type(source) == "string" then
+      return build.assign({
+        names = real_names,
+        values = (function()
+          local _accum_0 = { }
+          local _len_0 = 1
+          local _list_0 = stubs
+          for _index_0 = 1, #_list_0 do
+            local stub = _list_0[_index_0]
+            _accum_0[_len_0] = build.chain({
+              base = source,
+              stub
+            })
+            _len_0 = _len_0 + 1
+          end
+          return _accum_0
+        end)()
+      })
+    else
+      local source_name = NameProxy("table")
+      return build.group({
+        {
+          "declare",
+          real_names
+        },
+        build["do"]({
+          build.assign_one(source_name, source),
+          build.assign({
+            names = real_names,
+            values = (function()
+              local _accum_0 = { }
+              local _len_0 = 1
+              local _list_0 = stubs
+              for _index_0 = 1, #_list_0 do
+                local stub = _list_0[_index_0]
+                _accum_0[_len_0] = build.chain({
+                  base = source_name,
+                  stub
+                })
+                _len_0 = _len_0 + 1
+              end
+              return _accum_0
+            end)()
+          })
+        })
+      })
     end
-    local dest = {
-      "table",
-      table_values
-    }
-    return {
-      "assign",
-      {
-        dest
-      },
-      {
-        source
-      },
-      [-1] = node[-1]
-    }
   end,
   comprehension = function(self, node, action)
     local _, exp, clauses = unpack(node)
@@ -620,7 +614,7 @@ Statement = Transformer({
             local _list_0 = stm[2]
             for _index_0 = 1, #_list_0 do
               local name = _list_0[_index_0]
-              if ntype(name) == "ref" then
+              if type(name) == "string" then
                 _accum_0[_len_0] = name
                 _len_0 = _len_0 + 1
               end
@@ -652,7 +646,7 @@ Statement = Transformer({
       if destructure.has_destructure(assign[2]) then
         local name = NameProxy("des")
         body = {
-          destructure.build_assign(self, assign[2][1], name),
+          destructure.build_assign(assign[2][1], name),
           build.group(node[3])
         }
         return build["do"]({
@@ -689,38 +683,28 @@ Statement = Transformer({
     return node
   end,
   with = function(self, node, ret)
-    local exp, block = unpack(node, 2)
-    local copy_scope = true
-    local scope_name, named_assign
+    local _, exp, block = unpack(node)
+    local scope_name = NameProxy("with")
+    local named_assign
     if ntype(exp) == "assign" then
       local names, values = unpack(exp, 2)
-      local first_name = names[1]
-      if ntype(first_name) == "ref" then
-        scope_name = first_name
-        named_assign = exp
-        exp = values[1]
-        copy_scope = false
-      else
-        scope_name = NameProxy("with")
-        exp = values[1]
-        values[1] = scope_name
-        named_assign = {
-          "assign",
-          names,
-          values
-        }
-      end
-    elseif self:is_local(exp) then
-      scope_name = exp
-      copy_scope = false
+      local assign_name = names[1]
+      exp = values[1]
+      values[1] = scope_name
+      named_assign = {
+        "assign",
+        names,
+        values
+      }
     end
-    scope_name = scope_name or NameProxy("with")
     return build["do"]({
       Run(function(self)
         return self:set("scope_var", scope_name)
       end),
-      copy_scope and build.assign_one(scope_name, exp) or NOOP,
-      named_assign or NOOP,
+      build.assign_one(scope_name, exp),
+      build.group({
+        named_assign
+      }),
       build.group(block),
       (function()
         if ret then
@@ -729,27 +713,28 @@ Statement = Transformer({
       end)()
     })
   end,
-  foreach = function(self, node, _)
+  foreach = function(self, node)
     smart_node(node)
     local source = unpack(node.iter)
     local destructures = { }
-    do
+    node.names = (function()
       local _accum_0 = { }
       local _len_0 = 1
       for i, name in ipairs(node.names) do
         if ntype(name) == "table" then
           do
-            local proxy = NameProxy("des")
-            insert(destructures, destructure.build_assign(self, name, proxy))
-            _accum_0[_len_0] = proxy
+            local _with_0 = NameProxy("des")
+            local proxy = _with_0
+            insert(destructures, destructure.build_assign(name, proxy))
+            _accum_0[_len_0] = _with_0
           end
         else
           _accum_0[_len_0] = name
         end
         _len_0 = _len_0 + 1
       end
-      node.names = _accum_0
-    end
+      return _accum_0
+    end)()
     if next(destructures) then
       insert(destructures, build.group(node.body))
       node.body = destructures
@@ -757,16 +742,13 @@ Statement = Transformer({
     if ntype(source) == "unpack" then
       local list = source[2]
       local index_name = NameProxy("index")
-      local list_name = self:is_local(list) and list or NameProxy("list")
+      local list_name = NameProxy("list")
       local slice_var = nil
       local bounds
       if is_slice(list) then
         local slice = list[#list]
         table.remove(list)
         table.remove(slice, 1)
-        if self:is_local(list) then
-          list_name = list
-        end
         if slice[2] and slice[2] ~= "" then
           local max_tmp_name = NameProxy("max")
           slice_var = build.assign_one(max_tmp_name, slice[2])
@@ -802,8 +784,8 @@ Statement = Transformer({
         }
       end
       return build.group({
-        list_name ~= list and build.assign_one(list_name, list) or NOOP,
-        slice_var or NOOP,
+        build.assign_one(list_name, list),
+        slice_var,
         build["for"]({
           name = index_name,
           bounds = bounds,
@@ -812,7 +794,7 @@ Statement = Transformer({
               "assign",
               node.names,
               {
-                NameProxy.index(list_name, index_name)
+                list_name:index(index_name)
               }
             },
             build.group(node.body)
@@ -873,8 +855,9 @@ Statement = Transformer({
     local if_stm = {
       "if"
     }
-    for _index_0 = 1, #conds do
-      local cond = conds[_index_0]
+    local _list_0 = conds
+    for _index_0 = 1, #_list_0 do
+      local cond = _list_0[_index_0]
       local if_cond = convert_cond(cond)
       if first then
         first = false
@@ -891,19 +874,18 @@ Statement = Transformer({
   end,
   class = function(self, node, ret, parent_assign)
     local _, name, parent_val, body = unpack(node)
-    if parent_val == "" then
-      parent_val = nil
-    end
     local statements = { }
     local properties = { }
-    for _index_0 = 1, #body do
-      local item = body[_index_0]
+    local _list_0 = body
+    for _index_0 = 1, #_list_0 do
+      local item = _list_0[_index_0]
       local _exp_0 = item[1]
       if "stm" == _exp_0 then
         insert(statements, item[2])
       elseif "props" == _exp_0 then
-        for _index_1 = 2, #item do
-          local tuple = item[_index_1]
+        local _list_1 = item
+        for _index_1 = 2, #_list_1 do
+          local tuple = _list_1[_index_1]
           if ntype(tuple[1]) == "self" then
             insert(statements, build.assign_one(unpack(tuple)))
           else
@@ -913,13 +895,14 @@ Statement = Transformer({
       end
     end
     local constructor
-    do
+    properties = (function()
       local _accum_0 = { }
       local _len_0 = 1
-      for _index_0 = 1, #properties do
+      local _list_1 = properties
+      for _index_0 = 1, #_list_1 do
         local _continue_0 = false
         repeat
-          local tuple = properties[_index_0]
+          local tuple = _list_1[_index_0]
           local key = tuple[1]
           local _value_0
           if key[1] == "key_literal" and key[2] == constructor_name then
@@ -937,36 +920,37 @@ Statement = Transformer({
           break
         end
       end
-      properties = _accum_0
-    end
+      return _accum_0
+    end)()
     local parent_cls_name = NameProxy("parent")
     local base_name = NameProxy("base")
     local self_name = NameProxy("self")
     local cls_name = NameProxy("class")
     if not (constructor) then
-      if parent_val then
-        constructor = build.fndef({
-          args = {
-            {
-              "..."
-            }
-          },
-          arrow = "fat",
-          body = {
-            build.chain({
-              base = "super",
-              {
-                "call",
-                {
-                  "..."
-                }
-              }
-            })
+      constructor = build.fndef({
+        args = {
+          {
+            "..."
           }
-        })
-      else
-        constructor = build.fndef()
-      end
+        },
+        arrow = "fat",
+        body = {
+          build["if"]({
+            cond = parent_cls_name,
+            ["then"] = {
+              build.chain({
+                base = "super",
+                {
+                  "call",
+                  {
+                    "..."
+                  }
+                }
+              })
+            }
+          })
+        }
+      })
     end
     local real_name = name or parent_assign and parent_assign[2][1]
     local _exp_0 = ntype(real_name)
@@ -987,19 +971,10 @@ Statement = Transformer({
     elseif "nil" == _exp_0 then
       real_name = "nil"
     else
-      local name_t = type(real_name)
-      local flattened_name
-      if name_t == "string" then
-        flattened_name = real_name
-      elseif name_t == "table" and real_name[1] == "ref" then
-        flattened_name = real_name[2]
-      else
-        flattened_name = error("don't know how to extract name from " .. tostring(name_t))
-      end
       real_name = {
         "string",
         '"',
-        flattened_name
+        real_name
       }
     end
     local cls = build.table({
@@ -1015,66 +990,56 @@ Statement = Transformer({
         "__name",
         real_name
       },
-      parent_val and {
+      {
         "__parent",
         parent_cls_name
-      } or nil
+      }
     })
-    local class_index
-    if parent_val then
-      local class_lookup = build["if"]({
-        cond = {
-          "exp",
-          {
-            "ref",
-            "val"
-          },
-          "==",
-          "nil"
-        },
-        ["then"] = {
-          parent_cls_name:index("name")
-        }
-      })
-      insert(class_lookup, {
-        "else",
-        {
-          "val"
-        }
-      })
-      class_index = build.fndef({
-        args = {
-          {
-            "cls"
-          },
-          {
-            "name"
-          }
-        },
-        body = {
-          build.assign_one(LocalName("val"), build.chain({
-            base = "rawget",
-            {
-              "call",
-              {
-                base_name,
-                {
-                  "ref",
-                  "name"
-                }
-              }
-            }
-          })),
-          class_lookup
-        }
-      })
-    else
-      class_index = base_name
-    end
+    local class_lookup = build["if"]({
+      cond = {
+        "exp",
+        "val",
+        "==",
+        "nil",
+        "and",
+        parent_cls_name
+      },
+      ["then"] = {
+        parent_cls_name:index("name")
+      }
+    })
+    insert(class_lookup, {
+      "else",
+      {
+        "val"
+      }
+    })
     local cls_mt = build.table({
       {
         "__index",
-        class_index
+        build.fndef({
+          args = {
+            {
+              "cls"
+            },
+            {
+              "name"
+            }
+          },
+          body = {
+            build.assign_one(LocalName("val"), build.chain({
+              base = "rawget",
+              {
+                "call",
+                {
+                  base_name,
+                  "name"
+                }
+              }
+            })),
+            class_lookup
+          }
+        })
       },
       {
         "__call",
@@ -1125,6 +1090,7 @@ Statement = Transformer({
     })
     local value = nil
     do
+      local _with_0 = build
       local out_body = {
         Run(function(self)
           if name then
@@ -1132,17 +1098,17 @@ Statement = Transformer({
           end
           return self:set("super", function(block, chain)
             if chain then
-              local slice
-              do
+              local slice = (function()
                 local _accum_0 = { }
                 local _len_0 = 1
-                for _index_0 = 3, #chain do
-                  local item = chain[_index_0]
+                local _list_1 = chain
+                for _index_0 = 3, #_list_1 do
+                  local item = _list_1[_index_0]
                   _accum_0[_len_0] = item
                   _len_0 = _len_0 + 1
                 end
-                slice = _accum_0
-              end
+                return _accum_0
+              end)()
               local new_chain = {
                 "chain",
                 parent_cls_name
@@ -1186,8 +1152,9 @@ Statement = Transformer({
                   }
                 }
               end
-              for _index_0 = 1, #slice do
-                local item = slice[_index_0]
+              local _list_1 = slice
+              for _index_0 = 1, #_list_1 do
+                local item = _list_1[_index_0]
                 insert(new_chain, item)
               end
               return new_chain
@@ -1200,41 +1167,48 @@ Statement = Transformer({
           "declare_glob",
           "*"
         },
-        parent_val and build.assign_one(parent_cls_name, parent_val) or NOOP,
-        build.assign_one(base_name, {
+        _with_0.assign_one(parent_cls_name, parent_val == "" and "nil" or parent_val),
+        _with_0.assign_one(base_name, {
           "table",
           properties
         }),
-        build.assign_one(base_name:chain("__index"), base_name),
-        parent_val and build.chain({
-          base = "setmetatable",
-          {
-            "call",
-            {
-              base_name,
-              build.chain({
-                base = parent_cls_name,
+        _with_0.assign_one(base_name:chain("__index"), base_name),
+        _with_0["if"]({
+          cond = parent_cls_name,
+          ["then"] = {
+            _with_0.chain({
+              base = "setmetatable",
+              {
+                "call",
                 {
-                  "dot",
-                  "__base"
+                  base_name,
+                  _with_0.chain({
+                    base = parent_cls_name,
+                    {
+                      "dot",
+                      "__base"
+                    }
+                  })
                 }
-              })
-            }
+              }
+            })
           }
-        }) or NOOP,
-        build.assign_one(cls_name, cls),
-        build.assign_one(base_name:chain("__class"), cls_name),
-        build.group((function()
+        }),
+        _with_0.assign_one(cls_name, cls),
+        _with_0.assign_one(base_name:chain("__class"), cls_name),
+        _with_0.group((function()
           if #statements > 0 then
             return {
-              build.assign_one(LocalName("self"), cls_name),
-              build.group(statements)
+              _with_0.assign_one(LocalName("self"), cls_name),
+              _with_0.group(statements)
             }
           end
         end)()),
-        parent_val and build["if"]({
+        _with_0["if"]({
           cond = {
             "exp",
+            parent_cls_name,
+            "and",
             parent_cls_name:chain("__inherited")
           },
           ["then"] = {
@@ -1246,11 +1220,11 @@ Statement = Transformer({
               }
             })
           }
-        }) or NOOP,
-        build.group((function()
+        }),
+        _with_0.group((function()
           if name then
             return {
-              build.assign_one(name, cls_name)
+              _with_0.assign_one(name, cls_name)
             }
           end
         end)()),
@@ -1260,11 +1234,11 @@ Statement = Transformer({
           end
         end)()
       }
-      value = build.group({
-        build.group((function()
+      value = _with_0.group({
+        _with_0.group((function()
           if ntype(name) == "value" then
             return {
-              build.declare({
+              _with_0.declare({
                 names = {
                   name
                 }
@@ -1272,13 +1246,15 @@ Statement = Transformer({
             }
           end
         end)()),
-        build["do"](out_body)
+        _with_0["do"](out_body)
       })
     end
     return value
   end
 })
+local Accumulator
 do
+  local _parent_0 = nil
   local _base_0 = {
     body_idx = {
       ["for"] = 4,
@@ -1290,15 +1266,12 @@ do
       node[index] = self:mutate_body(node[index])
       return self:wrap(node)
     end,
-    wrap = function(self, node, group_type)
-      if group_type == nil then
-        group_type = "block_exp"
-      end
-      return build[group_type]({
+    wrap = function(self, node)
+      return build.block_exp({
         build.assign_one(self.accum_name, build.table()),
         build.assign_one(self.len_name, 1),
         node,
-        group_type == "block_exp" and self.accum_name or NOOP
+        self.accum_name
       })
     end,
     mutate_body = function(self, body)
@@ -1326,7 +1299,7 @@ do
         val = self.value_name
       end
       local update = {
-        build.assign_one(NameProxy.index(self.accum_name, self.len_name), val),
+        build.assign_one(self.accum_name:index(self.len_name), val),
         {
           "update",
           self.len_name,
@@ -1339,16 +1312,27 @@ do
     end
   }
   _base_0.__index = _base_0
+  if _parent_0 then
+    setmetatable(_base_0, _parent_0.__base)
+  end
   local _class_0 = setmetatable({
-    __init = function(self, accum_name)
+    __init = function(self)
       self.accum_name = NameProxy("accum")
       self.value_name = NameProxy("value")
       self.len_name = NameProxy("len")
     end,
     __base = _base_0,
-    __name = "Accumulator"
+    __name = "Accumulator",
+    __parent = _parent_0
   }, {
-    __index = _base_0,
+    __index = function(cls, name)
+      local val = rawget(_base_0, name)
+      if val == nil and _parent_0 then
+        return _parent_0[name]
+      else
+        return val
+      end
+    end,
     __call = function(cls, ...)
       local _self_0 = setmetatable({}, _base_0)
       cls.__init(_self_0, ...)
@@ -1356,8 +1340,12 @@ do
     end
   })
   _base_0.__class = _class_0
+  if _parent_0 and _parent_0.__inherited then
+    _parent_0.__inherited(_parent_0, _class_0)
+  end
   Accumulator = _class_0
 end
+local default_accumulator
 default_accumulator = function(self, node)
   return Accumulator():convert(node)
 end
@@ -1375,7 +1363,7 @@ implicitly_return = function(scope)
       return scope.transform.statement(stm, fn)
     elseif types.manual_return[t] or not types.is_value(stm) then
       if is_top and t == "return" and stm[2] == "" then
-        return NOOP
+        return nil
       else
         return stm
       end
@@ -1392,7 +1380,7 @@ implicitly_return = function(scope)
   end
   return fn
 end
-Value = Transformer({
+local Value = Transformer({
   ["for"] = default_accumulator,
   ["while"] = default_accumulator,
   foreach = default_accumulator,
@@ -1430,11 +1418,13 @@ Value = Transformer({
       end
     end
     if #node <= 3 then
-      if type(node[3]) == "string" then
-        return node
-      else
-        return convert_part(node[3])
-      end
+      return (function()
+        if type(node[3]) == "string" then
+          return node
+        else
+          return convert_part(node[3])
+        end
+      end)()
     end
     local e = {
       "exp",
@@ -1554,8 +1544,8 @@ Value = Transformer({
       table.remove(node, #node)
       local base_name = NameProxy("base")
       local fn_name = NameProxy("fn")
-      local is_super = ntype(node[2]) == "ref" and node[2][2] == "super"
-      return build.block_exp({
+      local is_super = node[2] == "super"
+      return self.transform.value(build.block_exp({
         build.assign({
           names = {
             base_name
@@ -1597,7 +1587,7 @@ Value = Transformer({
             })
           }
         })
-      })
+      }))
     end
   end,
   block_exp = function(self, node)

@@ -1,8 +1,4 @@
-local concat
-do
-  local _obj_0 = table
-  concat = _obj_0.concat
-end
+local concat = table.concat
 local unpack = unpack or table.unpack
 local type = type
 local moon = {
@@ -77,13 +73,15 @@ split = function(str, delim)
     return { }
   end
   str = str .. delim
-  local _accum_0 = { }
-  local _len_0 = 1
-  for m in str:gmatch("(.-)" .. delim) do
-    _accum_0[_len_0] = m
-    _len_0 = _len_0 + 1
-  end
-  return _accum_0
+  return (function()
+    local _accum_0 = { }
+    local _len_0 = 1
+    for m in str:gmatch("(.-)" .. delim) do
+      _accum_0[_len_0] = m
+      _len_0 = _len_0 + 1
+    end
+    return _accum_0
+  end)()
 end
 local dump
 dump = function(what)
@@ -102,16 +100,15 @@ dump = function(what)
       end
       seen[what] = true
       depth = depth + 1
-      local lines
-      do
+      local lines = (function()
         local _accum_0 = { }
         local _len_0 = 1
         for k, v in pairs(what) do
           _accum_0[_len_0] = (" "):rep(depth * 4) .. "[" .. tostring(k) .. "] = " .. _dump(v, depth)
           _len_0 = _len_0 + 1
         end
-        lines = _accum_0
-      end
+        return _accum_0
+      end)()
       seen[what] = false
       return "{\n" .. concat(lines) .. (" "):rep((depth - 1) * 4) .. "}\n"
     else
@@ -122,8 +119,7 @@ dump = function(what)
 end
 local debug_posmap
 debug_posmap = function(posmap, moon_code, lua_code)
-  local tuples
-  do
+  local tuples = (function()
     local _accum_0 = { }
     local _len_0 = 1
     for k, v in pairs(posmap) do
@@ -133,17 +129,17 @@ debug_posmap = function(posmap, moon_code, lua_code)
       }
       _len_0 = _len_0 + 1
     end
-    tuples = _accum_0
-  end
+    return _accum_0
+  end)()
   table.sort(tuples, function(a, b)
     return a[1] < b[1]
   end)
-  local lines
-  do
+  local lines = (function()
     local _accum_0 = { }
     local _len_0 = 1
-    for _index_0 = 1, #tuples do
-      local pair = tuples[_index_0]
+    local _list_0 = tuples
+    for _index_0 = 1, #_list_0 do
+      local pair = _list_0[_index_0]
       local lua_line, pos = unpack(pair)
       local moon_line = pos_to_line(moon_code, pos)
       local lua_text = get_line(lua_code, lua_line)
@@ -152,8 +148,8 @@ debug_posmap = function(posmap, moon_code, lua_code)
       _accum_0[_len_0] = _value_0
       _len_0 = _len_0 + 1
     end
-    lines = _accum_0
-  end
+    return _accum_0
+  end)()
   return concat(lines, "\n")
 end
 local setfenv = setfenv or function(fn, env)
