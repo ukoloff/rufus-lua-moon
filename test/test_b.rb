@@ -1,4 +1,4 @@
-require "./test/req"
+require_relative "req"
 
 class TestB < Minitest::Test
   def test_b1
