@@ -1,4 +1,4 @@
-require "minitest/autorun"
+require "./test/req"
 
 class TestB < Minitest::Test
   def test_b1
