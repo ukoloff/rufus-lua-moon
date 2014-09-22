@@ -8,7 +8,7 @@ task :test do
   require 'rufus/lua'
   require 'rufus/lua/moon'
 
-  Dir.glob('./test/*.rb').each{|f| require f}
+  Dir.glob('./test/*.rb'){|f| require f}
 end
 
 task default: :test
