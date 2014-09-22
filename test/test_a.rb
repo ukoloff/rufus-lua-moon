@@ -1,9 +1,4 @@
-require "minitest/autorun"
-
-require 'rufus/lua/win'
-require 'rufus/lua'
-require 'rufus/lua/moon'
-
+require "./test/req"
 
 class TestA < Minitest::Test
   def test_a
