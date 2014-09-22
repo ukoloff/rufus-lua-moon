@@ -1,5 +1,3 @@
-require_relative "req"
-
 class TestB < Minitest::Test
   def test_b1
     assert_equal 5, 2+3
