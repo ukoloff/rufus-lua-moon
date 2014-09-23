@@ -1,5 +1,6 @@
 class TestC < Minitest::Test
   def test_path
+    skip if '0.2.3'==Rufus::Lua::Moon::Version
     s=Rufus::Lua::State.new.moon!
     s['package']['moonpath']=File.expand_path '../?.moon', __FILE__
     assert_equal 3.0, s.eval("return require 'path27'")
