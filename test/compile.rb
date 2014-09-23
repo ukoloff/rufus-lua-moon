@@ -5,4 +5,9 @@ class TestC < Minitest::Test
       .gsub(/\s+/, '')['a(b(c))']
 
   end
+
+  def test_fail
+    s=Rufus::Lua::State.new.moon!
+    refute s.eval("return require('moonscript').to_lua 'a=b:'")[0]
+  end
 end
