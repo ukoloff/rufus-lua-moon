@@ -11,4 +11,4 @@ task :test do
   Dir.glob('./test/*.rb'){|f| require f}
 end
 
-task default: :test
+task :default=>:test
