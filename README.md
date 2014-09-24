@@ -1,5 +1,6 @@
 # Rufus::Lua::Moon
 
+[![Build Status](https://travis-ci.org/ukoloff/rufus-lua-moon.svg?branch=master)](https://travis-ci.org/ukoloff/rufus-lua-moon)
 [![Gem Version](https://badge.fury.io/rb/rufus-lua-moon.svg)](http://badge.fury.io/rb/rufus-lua-moon)
 
 Provides MoonScript for Rufus::Lua interpreter
