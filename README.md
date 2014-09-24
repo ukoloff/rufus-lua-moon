@@ -54,3 +54,4 @@ On Windows simply use
   * [Lua](http://www.lua.org/)
   * [MoonScript](http://moonscript.org/)
   * [Rufus::Lua](https://github.com/jmettraux/rufus-lua)
+  * [Travis CI](https://travis-ci.org/)
