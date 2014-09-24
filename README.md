@@ -41,12 +41,16 @@ s.eval <<EOL
 EOL
 ```
 
+## Dependencies
+
+On Linux you should have Lua and Lpeg installed
+(eg. for [Ubuntu](.travis.yml)). 
+
+On Windows simply use
+[Rufus::Lua::Win](https://github.com/ukoloff/rufus-lua-win).
+
 ## Credits
 
   * [Lua](http://www.lua.org/)
   * [MoonScript](http://moonscript.org/)
   * [Rufus::Lua](https://github.com/jmettraux/rufus-lua)
-
-## See also
-
-  * [Rufus::Lua::Win](https://github.com/ukoloff/rufus-lua-win) if you run Rufus::Lua on Windows
