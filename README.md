@@ -1,6 +1,7 @@
 # Rufus::Lua::Moon
 
 [![Build Status](https://travis-ci.org/ukoloff/rufus-lua-moon.svg?branch=master)](https://travis-ci.org/ukoloff/rufus-lua-moon)
+[![Build status](https://ci.appveyor.com/api/projects/status/9huwrdo2tm22kda6?svg=true)](https://ci.appveyor.com/project/ukoloff/rufus-lua-moon)
 [![Gem Version](https://badge.fury.io/rb/rufus-lua-moon.svg)](http://badge.fury.io/rb/rufus-lua-moon)
 
 Provides MoonScript for Rufus::Lua interpreter
@@ -55,3 +56,4 @@ On Windows simply use
   * [MoonScript](http://moonscript.org/)
   * [Rufus::Lua](https://github.com/jmettraux/rufus-lua)
   * [Travis CI](https://travis-ci.org/)
+  * [AppVeyor](http://www.appveyor.com/)
