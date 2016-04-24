@@ -13,11 +13,16 @@ class TestV < Minitest::Test
     assert(c.nil? || '.'==c)
 
     at_exit do
+      s = <<-EOT
+        Lua version #{luav}
+        Rufus::Lua version #{rufv}
+        MoonScript version #{moonv}
+        Rufus::Lua::Moon version #{gemv}
+      EOT
+      s.gsub!(/^\s+/, '')
       puts
-      puts "Lua version #{luav}"
-      puts "Rufus::Lua version #{rufv}"
-      puts "MoonScript version #{moonv}"
-      puts "Rufus::Lua::Moon version #{gemv}"
+      puts s
+      AppVeyor::Worker.message 'Versions', s
     end
   end
 end
