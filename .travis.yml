@@ -6,7 +6,7 @@ addons:
   apt:
     packages:
     - liblua5.1-0-dev
-    - lua-lpeg
+    - liblua5.1-lpeg2
 rvm:
   - 2.3
   - 2.2
