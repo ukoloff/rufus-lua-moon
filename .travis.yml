@@ -1,12 +1,16 @@
 language: ruby
 env:
-  moon: use
+  moon: rise
+addons:
+  apt:
+    packages:
+    - liblua5.1-0-dev
+    - lua-lpeg
 rvm:
+  - 2.3
   - 2.2
   - 2.1
   - 2.0.0
   - 1.9.3
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y liblua5.1-0-dev liblua5.1-lpeg2
   - gem install bundler -v 1.11
