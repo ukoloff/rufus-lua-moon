@@ -13,9 +13,11 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ukoloff/rufus-lua-moon"
   spec.license       = "MIT"
 
-  spec.files         = `git ls-files`.split($/) +
-			Dir.glob('vendor/leafo/moon/*.moon')+
-			Dir.glob('vendor/leafo/moonscript/**/*.lua')
+  spec.files         = Dir[
+    'lib/**/*',
+    'vendor/leafo/moon/*.moon',
+    'vendor/leafo/moonscript/**/*.lua',
+  ]
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
