@@ -1,6 +1,6 @@
 language: ruby
 env:
-  moon: use
+  moon: rise
 rvm:
   - 2.2
   - 2.1
