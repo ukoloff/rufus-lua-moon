@@ -26,7 +26,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake"
   spec.add_development_dependency "minitest"
   spec.add_development_dependency "rufus-lua-win"
-  spec.add_development_dependency "appveyor-worker"
 
   spec.add_dependency "rufus-lua"
 end
