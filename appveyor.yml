@@ -10,7 +10,7 @@ environment:
     - RUBY_VERSION: 22
     - RUBY_VERSION: 21
     - RUBY_VERSION: 200
-    - RUBY_VERSION: 193
+#    - RUBY_VERSION: 193
 
 install:
   - git submodule update --init --recursive
