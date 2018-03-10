@@ -1,12 +1,16 @@
+require 'appveyor/worker'
+
 class TestAV < Minitest::Test
   def test_av
     # return unless defined? AppVeyor::Worker
     ::AppVeyor::Worker.tests (1..1000).map do |i|
-	::AppVeyor::Worker.test testFramework: 'None',
+	{
+	    testFramework: 'None',
             testName: "Test #{i}",
             fileName: "none.rb:#{i+1}",
             outcome: 'Passed', 
             durationMilliseconds: 108
+	}
     end
   end
 end
