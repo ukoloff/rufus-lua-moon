@@ -21,7 +21,7 @@ module AppVeyor::Worker
   def self.tests info
     x = api or return
     body = JSON.generate info
-    puts body
+    message body
     x.put '/api/tests/batch',
       body,
       'Content-Length'=>body.length.to_s,
