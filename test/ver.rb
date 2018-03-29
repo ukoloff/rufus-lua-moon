@@ -22,7 +22,7 @@ class TestV < Minitest::Test
       s.gsub!(/^\s+/, '')
       puts
       puts s
-      AppVeyor::Worker.message 'Versions', s
+      AppVeyor::Worker.message 'Versions', s  if defined? AppVeyor
     end
   end
 end
