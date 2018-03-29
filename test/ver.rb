@@ -1,3 +1,5 @@
+require 'appveyor/worker'
+
 class TestV < Minitest::Test
   def test_ver
     s=Rufus::Lua::State.new.moon!
