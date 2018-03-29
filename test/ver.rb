@@ -1,5 +1,3 @@
-require 'appveyor/worker'
-
 class TestV < Minitest::Test
   def test_ver
     s=Rufus::Lua::State.new.moon!
@@ -24,7 +22,7 @@ class TestV < Minitest::Test
       s.gsub!(/^\s+/, '')
       puts
       puts s
-      AppVeyor::Worker.message 'Versions', s
+      AppVeyor::Worker.message 'Versions', s  if defined? AppVeyor
     end
   end
 end
